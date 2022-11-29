@@ -103,6 +103,40 @@ _BEHAVIOR = {
         'ago18/221113/D02'],
 }
 
+_MOTOR_beh_before_BMI = {
+    'D13': [
+        'ago13/221113/D02',
+        'ago13/221114/D03',
+    ],
+    'D15': [
+        'ago15/221113/D02',
+        'ago15/221114/D03',
+    ],
+    'D16': [
+        'ago16/221113/D02',
+        'ago16/221114/D03',
+    ],
+    'D18': [
+        'ago18/221113/D02',
+        'ago18/221114/D03',
+    ]
+}
+
+_MOTOR_initial_behavior = {
+    'D13': [
+        'ago13/221113/D02',
+    ],
+    'D15': [
+        'ago15/221113/D02',
+    ],
+    'D16': [
+        'ago16/221113/D02',
+    ],
+    'D18': [
+        'ago18/221113/D02',
+    ]
+}
+
 
 def get_sessions_df(folder_experiments: Path, experiment_type: Optional[str] = None) -> pd.DataFrame:
     """ Function to retrieve the name of the sessions that will be used depending on the experiment type

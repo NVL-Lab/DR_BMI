@@ -1,13 +1,14 @@
 
 __author__ = 'Nuria'
 
+import scipy
+import traja
 import pandas as pd
 import numpy as np
-import scipy
 import sklearn as sk
 import matplotlib.pyplot as plt
-from pathlib import Path
 
+from pathlib import Path
 from matplotlib import interactive
 
 interactive(True)
