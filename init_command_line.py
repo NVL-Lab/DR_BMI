@@ -3,6 +3,7 @@ __author__ = 'Nuria'
 
 import scipy
 import traja
+import os
 import pandas as pd
 import numpy as np
 import sklearn as sk
@@ -10,6 +11,8 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 from matplotlib import interactive
+
+from utils.analysis_command import AnalysisConfiguration
 
 interactive(True)
 
@@ -46,6 +49,7 @@ interactive(True)
 # check increase decrease of motion and other charactericts of motion during baseline / BMI / periods of BMI/ stim
 # relationship between motion and reward rate?
 # relationship between motion and neuronal activity? regress motion?
+# check correspondence with metters or inches or something more clear that the values I have now
 
 # TODO minor:
 # change the name of the repository to stimBMIPrairie

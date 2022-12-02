@@ -1,5 +1,6 @@
 
 import collections
+import os
 import pandas as pd
 from typing import Optional
 from pathlib import Path
@@ -46,7 +47,7 @@ _BMI_STIM_AGO = {
 
 _BMI_RANDOM = {
     'D13': [
-        'ago13/221115/D01'],
+        'ago13/221115/D04'],
     'D15': [
         'ago15/221115/D04',
         'ago15/221116/D05-2',
@@ -138,7 +139,7 @@ _MOTOR_initial_behavior = {
 }
 
 
-def get_sessions_df(folder_experiments: Path, experiment_type: Optional[str] = None) -> pd.DataFrame:
+def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFrame:
     """ Function to retrieve the name of the sessions that will be used depending on the experiment type
     and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
     if experiment_type == 'BMI_STIM_AGO':
@@ -153,39 +154,34 @@ def get_sessions_df(folder_experiments: Path, experiment_type: Optional[str] = N
         dict_items = _BEHAVIOR.items()
     else:
         raise ValueError(
-            f'Could not find any controls for {experiment_type} try BMI_STIM_AGO, BMI_RANDOM, BMI_STIM, BMI_AGO or BEHAVIOR')
+            f'Could not find any controls for {experiment_type} '
+            f'try BMI_STIM_AGO, BMI_RANDOM, BMI_STIM, BMI_AGO or BEHAVIOR')
     ret = collections.defaultdict(list)
     for mice_name, sessions_per_type in dict_items:
         for day_index, session_path in enumerate(sessions_per_type):
-            # TODO something to split up the session
+            [mice_name, session_date, day_init] = session_path.split('/')
             ret['mice_name'].append(mice_name)
+            ret['session_date'].append(session_date)
+            ret['day_init'].append(day_init)
+            ret['experiment_type'].append(experiment_type)
             ret['session_path'].append(session_path)
             ret['day_index'].append(day_index)
 
             dir_files = Path(folder_experiments) / session_path
-            list_files = []  # TODO find the way to ls the contents of the folder
-            for file_name in list_files:
-                if file_name[:2] == 'im':
-                    dir_im = Path(folder_experiments) / session_path / 'im'
-                    list_im_directories = []  # TODO find the way to ls the contents of the folder
-                    for file_name_im_dir in list_im_directories:
-                        dir_im2 = dir_im / file_name_im_dir
-                        list_im_files = [] # TODO find the way to ls the contents of the folder without . and ..
-                        for file_name_im_file in list_im_files:
-                            if file_name[:8] == 'baseline':
-                                ret['Baseline_im'].append(file_name_im_file)
-                                # TODO check that the + here works properly
-                                ret['Voltage_Baseline'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
-                            else:
-                                ret['Voltage_rec'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
-                                if experiment_type == 'BEHAVIOR':
-                                    if True: # TODO find how to know if it already has checked behavior
-                                        ret['Behavior_pre'].append(file_name_im_file)
-                                        ret['Behavior_post'].append(file_name_im_file)
-                                else:
+            for file_name in os.listdir(dir_files):
+                if experiment_type != 'BEHAVIOR':
+                    if file_name[:2] == 'im':
+                        dir_im = Path(folder_experiments) / session_path / 'im'
+                        for file_name_im_dir in os.listdir(dir_im):
+                            dir_im2 = dir_im / file_name_im_dir
+                            for file_name_im_file in os.listdir(dir_im2):
+                                if file_name_im_file[:8] == 'baseline':
+                                    ret['Baseline_im'].append(file_name_im_file)
+                                    ret['Voltage_Baseline'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
+                                elif file_name_im_file[:8] in ['BMI_stim', 'RandomDR']:
+                                    ret['Voltage_rec'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
                                     ret['Experiment'].append(file_name_im_file)
 
-                if experiment_type != 'BEHAVIOR':
                     if file_name[:10] == 'BaselineOn':
                         ret['Baseline_online'].append(file_name)
                     elif file_name[:10] == 'BMI_online':
@@ -198,4 +194,24 @@ def get_sessions_df(folder_experiments: Path, experiment_type: Optional[str] = N
                         ret['mask_data'].append(file_name)
                     elif file_name[:10] == 'target_cal':
                         ret['target_calibration'].append(file_name)
+
+                if file_name[:2] == 'mo':
+                    dir_motor = Path(folder_experiments) / session_path / 'motor'
+                    for file_name_motor_file in os.listdir(dir_motor):
+                        if file_name_motor_file[-7:-4] in ['ine', 'BMI']:
+                            [_, trigger_XY, _, baseline_BMI] = file_name_motor_file.split('_')
+                            if trigger_XY == 'XY':
+                                if baseline_BMI == 'baseline.csv':
+                                    ret['XY_baseline'].append(file_name_motor_file)
+                                elif baseline_BMI == 'BMI.csv':
+                                    ret['XY_BMI'].append(file_name_motor_file)
+                            elif trigger_XY == 'Trigger':
+                                if baseline_BMI == 'baseline.csv':
+                                    ret['trigger_baseline'].append(file_name_motor_file)
+                                elif baseline_BMI == 'BMI.csv':
+                                    ret['trigger_BMI'].append(file_name_motor_file)
+            if session_path == 'ago18/221117/D06':
+                ret['roi_data'].append('missing')
+                ret['mask_data'].append('missing')
+
     return pd.DataFrame(ret)
