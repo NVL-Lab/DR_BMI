@@ -38,3 +38,23 @@ def obtain_motion_data(folder_experiments: Path) -> pd.DataFrame:
                 for key in BMI_motor_features.index:
                     ret[key].append(BMI_motor_features[key])
     return pd.DataFrame(ret)
+
+
+def obtain_motion_behav_data(folder_experiments: Path) -> pd.DataFrame:
+    """ function to compare motion characteristics between baseline and experiment """
+    ret = collections.defaultdict(list)
+    for experiment_type in AnalysisConfiguration.behav_type:
+        df_sessions = ss.get_sessions_df(folder_experiments, experiment_type)
+        mice = df_sessions.mice_name.unique()
+        for aa, mouse in enumerate(mice):
+            df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
+            for index, row in df_sessions_mouse.iterrows():
+                ret['mice'].append(mouse)
+                ret['date'].append(row['date'])
+                ret['experiment'].append(experiment_type)
+                XY = ma.extract_XY_data(row['trigger'], row['XY'])
+                motor_features = ma.obtain_movement_parameters(XY)
+                for key in motor_features.index:
+                    ret[key].append(motor_features[key])
+    return pd.DataFrame(ret)
+

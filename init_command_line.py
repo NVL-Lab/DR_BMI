@@ -8,11 +8,13 @@ import pandas as pd
 import numpy as np
 import sklearn as sk
 import matplotlib.pyplot as plt
+import scipy.io as sio
 
 from pathlib import Path
 from matplotlib import interactive
 
 from utils.analysis_command import AnalysisConfiguration
+from utils.analysis_constants import AnalysisConstants
 
 interactive(True)
 
@@ -29,7 +31,6 @@ interactive(True)
 # simulate BMI after doing the motion correction (For HOLOBMI)
 
 # TODO ANALYSIS
-# obtain the increase of hits as done before but adjusting by time of start
 # check if the chance of silence at the beginning of the experiment is not by chance. the increase is real. MEaning
 # there are not trains/bouts
 # plot the hits/min average per mice
@@ -44,12 +45,10 @@ interactive(True)
 # check general neuronal activity differences in all experiment types?
 
 # TODO MOTION
-# find a package for the motion
 # can we synchronize well the motion sensor with the 2p data online and images?
 # check increase decrease of motion and other charactericts of motion during baseline / BMI / periods of BMI/ stim
 # relationship between motion and reward rate?
 # relationship between motion and neuronal activity? regress motion?
-# check correspondence with metters or inches or something more clear that the values I have now
 
 # TODO minor:
 # change the name of the repository to stimBMIPrairie

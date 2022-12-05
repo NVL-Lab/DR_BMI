@@ -33,3 +33,5 @@ class AnalysisConstants:
     var_count = 'count'
     var_bins = 'bins'
     var_slope = 'slope'
+    # from Prairie
+    framerate = 29.752  # framerate of acquisition of images

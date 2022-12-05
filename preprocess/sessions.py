@@ -215,3 +215,41 @@ def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFr
                 ret['mask_data'].append('missing')
 
     return pd.DataFrame(ret)
+
+
+def get_behav_df(folder_experiments: Path) -> pd.DataFrame:
+    """ Function to retrieve the name of the sessions that will be used depending on the experiment type
+    and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
+    if experiment_type == 'Initial_behavior':
+        dict_items = _MOTOR_initial_behavior.items()
+    elif experiment_type == 'Behavior_before':
+        dict_items = _MOTOR_beh_before_BMI.items()
+    else:
+        raise ValueError(
+            f'Could not find any controls for {experiment_type} try Initial_behavior, Behavior_before')
+    ret = collections.defaultdict(list)
+    for mice_name, sessions_per_type in dict_items:
+        for day_index, session_path in enumerate(sessions_per_type):
+            [mice_name, session_date, day_init] = session_path.split('/')
+            ret['mice_name'].append(mice_name)
+            ret['session_date'].append(session_date)
+            ret['day_init'].append(day_init)
+            ret['experiment_type'].append(experiment_type)
+            ret['session_path'].append(session_path)
+            ret['day_index'].append(day_index)
+
+            dir_files = Path(folder_experiments) / session_path
+            for file_name in os.listdir(dir_files):
+                if file_name[:2] == 'mo':
+                    dir_motor = Path(folder_experiments) / session_path / 'motor'
+                    for file_name_motor_file in os.listdir(dir_motor):
+                        # TODO check ending for behav and inital
+                        if file_name_motor_file[-7:-4] in ['ine', 'BMI']:
+                            [_, trigger_XY, _, _] = file_name_motor_file.split('_')
+                            if trigger_XY == 'XY':
+                                ret['XY'].append(file_name_motor_file)
+                            elif trigger_XY == 'Trigger':
+                                ret['trigger'].append(file_name_motor_file)
+
+    return pd.DataFrame(ret)
+
