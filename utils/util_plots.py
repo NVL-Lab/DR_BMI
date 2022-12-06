@@ -53,9 +53,23 @@ def save_plot(fig: plt.figure, ax: Optional, folder_path: Path, var_sig: str = '
 
 def get_pvalues(a, b, ax, pos: float = 0, height: float = 0.13, ind: bool = True):
     if ind:
-        _, p_value = stats.ttest_ind(a, b)
+        _, p_value = stats.ttest_ind(a[~np.isnan(a)], b[~np.isnan(b)])
     else:
         _, p_value = stats.ttest_rel(a, b)
-    p = str(p_value)
-    ax.text(pos, height, p)
-    ax.text(pos + pos/3, height - height/3, "p = %0.2E" % p_value)
+    ax.text(pos, height, calc_pvalue(p_value))
+    ax.text(pos + pos*0.1, height - height/3, "p = %0.2E" % p_value)
+
+
+def calc_pvalue(p_value: float) -> str:
+    """ returns a string with the pvalue ready to plot """
+    if p_value <= 0.001:
+        p = '***'
+    elif p_value <= 0.01:
+        p = '**'
+    elif p_value <= 0.05:
+        p = '*'
+    elif np.isnan(p_value):
+        p = 'nan'
+    else:
+        p = 'ns'
+    return p

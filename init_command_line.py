@@ -1,8 +1,11 @@
 
 __author__ = 'Nuria'
 
-import scipy
 import traja
+from motion import motion_analysis as ma
+from motion import motion_population as mp
+
+import scipy
 import os
 import collections
 import pandas as pd
@@ -10,16 +13,17 @@ import numpy as np
 import sklearn as sk
 import matplotlib.pyplot as plt
 import scipy.io as sio
+import seaborn as sns
 
 from pathlib import Path
 from matplotlib import interactive
 
 from preprocess import sessions as ss
 from utils.analysis_command import AnalysisConfiguration
-from motion import motion_analysis as ma
-from motion import motion_population as mp
+
 from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
+from utils import util_plots as ut_plots
 
 interactive(True)
 
