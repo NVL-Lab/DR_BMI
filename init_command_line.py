@@ -4,6 +4,7 @@ __author__ = 'Nuria'
 import scipy
 import traja
 import os
+import collections
 import pandas as pd
 import numpy as np
 import sklearn as sk
@@ -13,11 +14,16 @@ import scipy.io as sio
 from pathlib import Path
 from matplotlib import interactive
 
+from preprocess import sessions as ss
+from utils.analysis_command import AnalysisConfiguration
+from motion import motion_analysis as ma
+from motion import motion_population as mp
 from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 
 interactive(True)
 
+folder_experiments = "F:/data"
 
 # TODO ONACID
 # Learn about ONACID, can it deal with stim artifacts some other way?
