@@ -23,7 +23,8 @@ from utils.analysis_constants import AnalysisConstants
 
 interactive(True)
 
-folder_experiments = "F:/data"
+folder_experiments = Path("F:/data/raw")
+folder_save = Path("F:/data/process")
 
 # TODO ONACID
 # Learn about ONACID, can it deal with stim artifacts some other way?
