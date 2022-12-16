@@ -20,15 +20,18 @@ from matplotlib import interactive
 
 from preprocess import sessions as ss
 from utils.analysis_command import AnalysisConfiguration
-
-from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 from utils import util_plots as ut_plots
+from analysis import learning
 
 interactive(True)
 
 folder_experiments = Path("F:/data/raw")
 folder_save = Path("F:/data/process")
+
+motion_data = pd.read_parquet(folder_save / 'motion_data.parquet')
+motion_behavior = pd.read_parquet(folder_save / 'motion_behavior.parquet')
+folder_plots = Path('F:/data/process/plots/learning')
 
 # TODO ONACID
 # Learn about ONACID, can it deal with stim artifacts some other way?

@@ -48,12 +48,12 @@ def obtain_movement_parameters(XY_smooth: Optional[pd.DataFrame] = None) -> pd.S
         movement['acceleration_std'] = XY_derivatives.acceleration.std()
         run_data = traja.trajectory.speed_intervals(XY_smooth, faster_than=AnalysisConfiguration.run_speed_min)
         walk_data = traja.trajectory.speed_intervals(XY_smooth, faster_than=AnalysisConfiguration.walk_speed_min)
-        movement['boat_run'] = len(run_data)
-        movement['boat_run_per_min'] = len(run_data) / (movement['timedelta'] / 60)
-        movement['boat_run_speed'] = XY_derivatives[XY_derivatives.speed > AnalysisConfiguration.run_speed_min].speed.mean()
-        movement['boat_walk'] = len(walk_data)
-        movement['boat_walk_per_min'] = len(walk_data) / (movement['timedelta'] / 60)
-        movement['boat_walk_speed'] = XY_derivatives[XY_derivatives.speed > AnalysisConfiguration.walk_speed_min].speed.mean()
+        movement['bout_run'] = len(run_data)
+        movement['bout_run_per_min'] = len(run_data) / (movement['timedelta'] / 60)
+        movement['bout_run_speed'] = XY_derivatives[XY_derivatives.speed > AnalysisConfiguration.run_speed_min].speed.mean()
+        movement['bout_walk'] = len(walk_data)
+        movement['bout_walk_per_min'] = len(walk_data) / (movement['timedelta'] / 60)
+        movement['bout_walk_speed'] = XY_derivatives[XY_derivatives.speed > AnalysisConfiguration.walk_speed_min].speed.mean()
     else:
         movement = None
     return movement

@@ -10,12 +10,13 @@ from pathlib import Path
 from preprocess import sessions as ss
 from utils.analysis_command import AnalysisConfiguration
 from motion import motion_analysis as ma
+from utils.analysis_constants import AnalysisConstants
 
 
 def obtain_motion_data(folder_experiments: Path) -> pd.DataFrame:
     """ function to compare motion characteristics between baseline and experiment """
     ret = collections.defaultdict(list)
-    for experiment_type in AnalysisConfiguration.experiment_types:
+    for experiment_type in AnalysisConstants.experiment_types:
         df_sessions = ss.get_sessions_df(folder_experiments, experiment_type)
         mice = df_sessions.mice_name.unique()
         for aa, mouse in enumerate(mice):
@@ -46,7 +47,7 @@ def obtain_motion_data(folder_experiments: Path) -> pd.DataFrame:
 def obtain_motion_behav_data(folder_experiments: Path) -> pd.DataFrame:
     """ function to compare motion characteristics between baseline and experiment """
     ret = collections.defaultdict(list)
-    for experiment_type in AnalysisConfiguration.behav_type:
+    for experiment_type in AnalysisConstants.behav_type:
         df_sessions = ss.get_behav_df(folder_experiments, experiment_type)
         mice = df_sessions.mice_name.unique()
         for aa, mouse in enumerate(mice):

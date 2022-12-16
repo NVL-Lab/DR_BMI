@@ -2,6 +2,7 @@
 import collections
 import os
 import pandas as pd
+import numpy as np
 from typing import Optional
 from pathlib import Path
 
@@ -139,23 +140,39 @@ _MOTOR_initial_behavior = {
 }
 
 
+def get_all_sessions() -> pd.DataFrame:
+    """ function to get a df with all sessions"""
+    df_BMI_STIM_AGO = pd.DataFrame(index=np.concatenate(list(_BMI_STIM_AGO.values())))
+    df_BMI_STIM_AGO['experiment_type'] = 'BMI_STIM_AGO'
+    df_BMI_RANDOM = pd.DataFrame(index=np.concatenate(list(_BMI_RANDOM.values())))
+    df_BMI_RANDOM['experiment_type'] = 'BMI_CONTROL_RANDOM'
+    df_BMI_STIM = pd.DataFrame(index=np.concatenate(list(_BMI_STIM.values())))
+    df_BMI_STIM['experiment_type'] = 'BMI_CONTROL_LIGHT'
+    df_BMI_AGO = pd.DataFrame(index=np.concatenate(list(_BMI_AGO.values())))
+    df_BMI_AGO['experiment_type'] = 'BMI_CONTROL_AGO'
+    df_experiments = pd.concat([pd.concat([df_BMI_STIM_AGO, df_BMI_RANDOM]),
+                                pd.concat([df_BMI_STIM, df_BMI_AGO])])
+    return df_experiments.sort_index().reset_index()
+
+
 def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFrame:
     """ Function to retrieve the name of the sessions that will be used depending on the experiment type
     and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
+    df_experiments = get_all_sessions()
     if experiment_type == 'BMI_STIM_AGO':
         dict_items = _BMI_STIM_AGO.items()
-    elif experiment_type == 'BMI_RANDOM':
+    elif experiment_type == 'BMI_CONTROL_RANDOM':
         dict_items = _BMI_RANDOM.items()
-    elif experiment_type == 'BMI_STIM':
+    elif experiment_type == 'BMI_CONTROL_LIGHT':
         dict_items = _BMI_STIM.items()
-    elif experiment_type == 'BMI_AGO':
+    elif experiment_type == 'BMI_CONTROL_AGO':
         dict_items = _BMI_AGO.items()
     elif experiment_type == 'BEHAVIOR':
         dict_items = _BEHAVIOR.items()
     else:
         raise ValueError(
             f'Could not find any controls for {experiment_type} '
-            f'try BMI_STIM_AGO, BMI_RANDOM, BMI_STIM, BMI_AGO or BEHAVIOR')
+            f'try BMI_STIM_AGO, BMI_CONTROL_RANDOM, BMI_CONTROL_LIGHT, BMI_CONTROL_AGO or BEHAVIOR')
     ret = collections.defaultdict(list)
     for mice_name, sessions_per_type in dict_items:
         for day_index, session_path in enumerate(sessions_per_type):
@@ -163,6 +180,16 @@ def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFr
             ret['mice_name'].append(mice_name)
             ret['session_date'].append(session_date)
             ret['day_init'].append(day_init)
+            location_session = np.where(df_experiments["index"] == session_path)[0][0]
+            if day_init[-2:] == '-2':
+                ret['session_day'].append('2nd')
+                ret['previous_session'].append(df_experiments.iloc[location_session - 1].experiment_type)
+            elif day_init[-2:] == '-3':
+                ret['session_day'].append('3rd')
+                ret['previous_session'].append(df_experiments.iloc[location_session - 1].experiment_type)
+            else:
+                ret['session_day'].append('1st')
+                ret['previous_session'].append('None')
             ret['experiment_type'].append(experiment_type)
             ret['session_path'].append(session_path)
             ret['day_index'].append(day_index)

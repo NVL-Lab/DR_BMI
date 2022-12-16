@@ -35,3 +35,5 @@ class AnalysisConstants:
     var_slope = 'slope'
     # from Prairie
     framerate = 29.752  # framerate of acquisition of images
+    experiment_types = ['BMI_STIM_AGO', 'BMI_CONTROL_RANDOM', 'BMI_CONTROL_LIGHT', 'BMI_CONTROL_AGO']
+    behav_type = ['Initial_behavior', 'Behavior_before']

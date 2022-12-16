@@ -20,8 +20,6 @@ class AnalysisConfiguration:
 
     # general
     tol = 0.05  # tolerance at which the pvalues will be consider significant
-    experiment_types = ['BMI_STIM_AGO', 'BMI_RANDOM', 'BMI_STIM', 'BMI_AGO']
-    behav_type = ['Initial_behavior', 'Behavior_before']
 
     # plotting
     to_plot: bool = False
