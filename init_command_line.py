@@ -19,6 +19,7 @@ from pathlib import Path
 from matplotlib import interactive
 
 from preprocess import sessions as ss
+from preprocess.prepare_data import prepare_ops_file_2nd_pass
 from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 from utils import util_plots as ut_plots
@@ -33,13 +34,12 @@ motion_data = pd.read_parquet(folder_save / 'motion_data.parquet')
 motion_behavior = pd.read_parquet(folder_save / 'motion_behavior.parquet')
 folder_plots = Path('F:/data/process/plots/learning')
 
-# TODO ONACID
-# Learn about ONACID, can it deal with stim artifacts some other way?
-# can it deal with such noisy images? or should I average across multiple files?
-# Find a way to remove STIM artifacts from the data by looking at the voltage rec
-# function to deal with voltage recording in general not one by one
-# create a way to go through all the files for onacid and start the preprocess
 
+###########################################################
+# suite2p
+file_path = 'F:/data/process/ago13/221112/D01'
+file_origin = 'F:/data/raw/ago13/221112/D01/im/baseline/baseline_221112T092905-237'
+prepare_ops_file_2nd_pass(file_path, file_origin)
 
 # TODO OTHERS
 # simulate BMI after doing the motion correction (For HOLOBMI)
