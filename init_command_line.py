@@ -19,7 +19,7 @@ from pathlib import Path
 from matplotlib import interactive
 
 from preprocess import sessions as ss
-from preprocess.prepare_data import prepare_ops_file_2nd_pass
+from preprocess.prepare_data import prepare_ops_file_2nd_pass, prepare_ops_1st_pass
 from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 from utils import util_plots as ut_plots
@@ -27,19 +27,48 @@ from analysis import learning
 
 interactive(True)
 
-folder_experiments = Path("F:/data/raw")
+folder_raw = Path("F:/data/raw")
 folder_save = Path("F:/data/process")
-
-motion_data = pd.read_parquet(folder_save / 'motion_data.parquet')
-motion_behavior = pd.read_parquet(folder_save / 'motion_behavior.parquet')
-folder_plots = Path('F:/data/process/plots/learning')
+default_path = folder_save / "default_var"
 
 
 ###########################################################
 # suite2p
-file_path = 'F:/data/process/ago13/221112/D01'
+import pandas as pd
+from pathlib import Path
+from preprocess.prepare_data import prepare_ops_file_2nd_pass, prepare_ops_1st_pass
+
+folder_raw = Path("F:/data/raw")
+folder_save = Path("F:/data/process")
+default_path = folder_save / "default_var"
+
+folder_experiment = Path('F:/data/raw/ago13/221112/D01')
+folder_processed_experiment = Path('F:/data/process/ago13/221112/D01')
+file_path = folder_processed_experiment / 'suite2p' / 'plane0'
+if not Path(file_path).exists():
+    Path(file_path).mkdir(parents=True, exist_ok=True)
 file_origin = 'F:/data/raw/ago13/221112/D01/im/baseline/baseline_221112T092905-237'
-prepare_ops_file_2nd_pass(file_path, file_origin)
+
+data_path = [str(folder_experiment / 'im/baseline/baseline_221112T092905-237'),
+              str(folder_experiment / 'im/BMI_stim/BMI_stim_221112T095524-239')]
+
+db = {
+    'data_path': data_path,
+    'save_path0': str(folder_processed_experiment),
+    'ops_path': str(file_path / 'ops.npy'),
+    'fast_disk': str(Path('C:/Users/Nuria/Documents/DATA')),
+      }
+
+ops = prepare_ops_1st_pass(default_path, db['ops_path'])
+
+from suite2p.run_s2p import run_s2p
+ops1 = run_s2p(ops, db)
+
+
+# AFTER IT RUNS
+classfile = suite2p.classification.builtin_classfile
+ops2, stat = suite2p.detection_wrapper(f_reg=ops['reg_file'], ops=ops1, classfile=classfile)
+
 
 # TODO OTHERS
 # simulate BMI after doing the motion correction (For HOLOBMI)
@@ -73,3 +102,9 @@ prepare_ops_file_2nd_pass(file_path, file_origin)
 # second day 3 sessions of bmi_atim_ago no audio (Difference? yes? total 5 sessions).
 # Third day random_stim with audio. 4th day normal
 # new control extinction...
+
+###########################################################
+# MOTION
+motion_data = pd.read_parquet(folder_save / 'motion_data.parquet')
+motion_behavior = pd.read_parquet(folder_save / 'motion_behavior.parquet')
+folder_plots = Path('F:/data/process/plots/learning')

@@ -207,7 +207,8 @@ def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFr
                                     ret['Voltage_Baseline'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
                                 elif file_name_im_file[:8] in ['BMI_stim', 'RandomDR']:
                                     ret['Voltage_rec'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
-                                    ret['Experiment'].append(file_name_im_file)
+                                    ret['Experiment_im'].append(file_name_im_file)
+                                    ret['Experiment_dir'].append(file_name_im_dir)
 
                     if file_name[:10] == 'BaselineOn':
                         ret['Baseline_online'].append(file_name)

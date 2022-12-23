@@ -40,3 +40,5 @@ class AnalysisConstants:
     # stim removal
     height_stim_artifact = 5  # height of the stim artifact in std
     size_stim_frames = 40  # number of frames to disregard after stim
+    # preprocess
+    fast_disk = 'C:/Users/Nuria/Documents/DATA'
