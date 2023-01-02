@@ -70,6 +70,10 @@ classfile = suite2p.classification.builtin_classfile
 ops2, stat = suite2p.detection_wrapper(f_reg=ops['reg_file'], ops=ops1, classfile=classfile)
 
 
+
+####
+from preprocess.process_data import run_all_experiments
+
 # TODO OTHERS
 # simulate BMI after doing the motion correction (For HOLOBMI)
 
