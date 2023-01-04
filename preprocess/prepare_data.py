@@ -59,12 +59,12 @@ def prepare_ops_file_2nd_pass(default_path: Path, file_path: Path, file_origin: 
     aux_ops = np.load(Path(default_path) / "default_ops.npy", allow_pickle=True)
     ops = aux_ops.take(0)
     # ops['frames_include'] = frames_include
-    # ops["badframes"] = bad_frames_ops
+    ops["badframes"] = bad_frames_ops
     ops["delete_bin"] = False
     ops['anatomical_only'] = 0
     # save new ops and the file of bad_frames
     np.save(Path(file_path) / "ops.npy", ops, allow_pickle=True)
-    np.save(Path(file_origin) / 'bad_frames.npy', bad_frames_to_save)
+    # np.save(Path(file_origin) / 'bad_frames.npy', bad_frames_to_save)
     return ops
 
 

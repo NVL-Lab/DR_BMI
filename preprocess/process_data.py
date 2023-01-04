@@ -32,7 +32,6 @@ def run_all_experiments(folder_raw: Path, folder_save: Path):
             db = {
                 'data_path': data_path,
                 'save_path0': str(folder_processed_experiment),
-                'ops_path': str(file_path / 'ops.npy'),
                 'fast_disk': str(Path('C:/Users/Nuria/Documents/DATA')),
             }
 
@@ -63,7 +62,6 @@ def run_all_second_pass(folder_raw: Path, folder_save: Path):
             db = {
                 'data_path': data_path,
                 'save_path0': str(folder_processed_experiment),
-                'ops_path': str(file_path / 'ops.npy'),
                 'fast_disk': str(Path('C:/Users/Nuria/Documents/DATA')),
             }
 

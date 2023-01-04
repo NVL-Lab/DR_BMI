@@ -107,6 +107,12 @@ from preprocess.process_data import run_all_experiments
 # Third day random_stim with audio. 4th day normal
 # new control extinction...
 
+# run the behavior before turning the uv light to see if there is lickage of room light
+# brief summary for the increase in activity in cortex
+# removing tone before or after high performance
+# is it worth it the randomstim no audio
+# how many animals we need for this.
+
 ###########################################################
 # MOTION
 motion_data = pd.read_parquet(folder_save / 'motion_data.parquet')
