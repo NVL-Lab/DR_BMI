@@ -155,7 +155,7 @@ def get_all_sessions() -> pd.DataFrame:
     return df_experiments.sort_index().reset_index()
 
 
-def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFrame:
+def get_sessions_df(folder_raw: Path, experiment_type: str) -> pd.DataFrame:
     """ Function to retrieve the name of the sessions that will be used depending on the experiment type
     and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
     df_experiments = get_all_sessions()
@@ -194,11 +194,11 @@ def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFr
             ret['session_path'].append(session_path)
             ret['day_index'].append(day_index)
 
-            dir_files = Path(folder_experiments) / session_path
+            dir_files = Path(folder_raw) / session_path
             for file_name in os.listdir(dir_files):
                 if experiment_type != 'BEHAVIOR':
                     if file_name[:2] == 'im':
-                        dir_im = Path(folder_experiments) / session_path / 'im'
+                        dir_im = Path(folder_raw) / session_path / 'im'
                         for file_name_im_dir in os.listdir(dir_im):
                             dir_im2 = dir_im / file_name_im_dir
                             for file_name_im_file in os.listdir(dir_im2):
@@ -224,7 +224,7 @@ def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFr
                         ret['target_calibration'].append(file_name)
 
                 if file_name[:2] == 'mo':
-                    dir_motor = Path(folder_experiments) / session_path / 'motor'
+                    dir_motor = Path(folder_raw) / session_path / 'motor'
                     for file_name_motor_file in os.listdir(dir_motor):
                         if file_name_motor_file[-7:-4] in ['ine', 'BMI']:
                             [_, trigger_XY, _, baseline_BMI] = file_name_motor_file.split('_')
@@ -238,9 +238,6 @@ def get_sessions_df(folder_experiments: Path, experiment_type: str) -> pd.DataFr
                                     ret['trigger_baseline'].append(file_name_motor_file)
                                 elif baseline_BMI == 'BMI.csv':
                                     ret['trigger_BMI'].append(file_name_motor_file)
-            if session_path == 'ago18/221117/D06':
-                ret['roi_data'].append('missing')
-                ret['mask_data'].append('missing')
 
     return pd.DataFrame(ret)
 

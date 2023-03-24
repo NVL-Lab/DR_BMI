@@ -38,7 +38,6 @@ class AnalysisConstants:
     experiment_types = ['BMI_STIM_AGO', 'BMI_CONTROL_RANDOM', 'BMI_CONTROL_LIGHT', 'BMI_CONTROL_AGO']
     behav_type = ['Initial_behavior', 'Behavior_before']
     # stim removal
-    height_stim_artifact = 5  # height of the stim artifact in std
-    size_stim_frames = 40  # number of frames to disregard after stim
+    height_stim_artifact = 3  # height of the stim artifact in std
     # preprocess
     fast_disk = 'C:/Users/Nuria/Documents/DATA'

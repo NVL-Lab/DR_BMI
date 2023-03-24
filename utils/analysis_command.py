@@ -26,8 +26,7 @@ class AnalysisConfiguration:
     plot_path = Path("C:/Users/nuria/DATA/plots")
 
     # movement
-    run_speed_min: int = 1e6  # minimum speed to consider boats of running
-    walk_speed_min: int = 1e4  # minimum speed to consider boats of walking
+    run_speed_min: float = 10.  # minimum speed to consider boats of running
     speed_smooth_factor: int = 31  # seconds to smooth motion
 
     # learning
