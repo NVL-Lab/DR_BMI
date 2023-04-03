@@ -30,7 +30,7 @@ def open_2subplots():
 def open_xsubplots(num_subplots: int = 4):
     fig = plt.figure(figsize=(12, 8))
     subplots = []
-    for ind in np.arange(1, num_subplots+1):
+    for ind in np.arange(1, num_subplots + 1):
         ax = fig.add_subplot(np.ceil(np.sqrt(num_subplots)), np.sqrt(num_subplots), ind)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
@@ -51,13 +51,33 @@ def save_plot(fig: plt.figure, ax: Optional, folder_path: Path, var_sig: str = '
     plt.close(fig)
 
 
+def easy_plot(arr: np.array, xx: Optional[np.array] = None, folder_plots: Optional[Path] = None,
+              var_sig: Optional[str] = None):
+    fig1, ax1 = open_plot()
+    if xx is not None:
+        ax1.plot(xx, arr)
+    else:
+        ax1.plot(arr)
+    if folder_plots is not None:
+        if var_sig is None: var_sig = 'kk'
+        save_plot(fig1, ax1, folder_plots, var_sig)
+
+
+def easy_imshow(arr: np.array, folder_plots: Optional[Path] = None, var_sig: Optional[str] = None):
+    fig1, ax1 = open_plot()
+    ax1.imshow(arr)
+    if folder_plots is not None:
+        if var_sig is None: var_sig = 'kk'
+        save_plot(fig1, ax1, folder_plots, var_sig)
+
+
 def get_pvalues(a, b, ax, pos: float = 0, height: float = 0.13, ind: bool = True):
     if ind:
         _, p_value = stats.ttest_ind(a[~np.isnan(a)], b[~np.isnan(b)])
     else:
         _, p_value = stats.ttest_rel(a, b)
     ax.text(pos, height, calc_pvalue(p_value))
-    ax.text(pos + pos*0.1, height - height/3, "p = %0.2E" % p_value)
+    ax.text(pos + pos * 0.1, height - height / 3, "p = %0.2E" % p_value)
 
 
 def calc_pvalue(p_value: float) -> str:

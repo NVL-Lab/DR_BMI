@@ -24,6 +24,7 @@ class AnalysisConfiguration:
     # plotting
     to_plot: bool = False
     plot_path = Path("C:/Users/nuria/DATA/plots")
+    hist_bins_default = 100  # number of bins by default to use on histograms
 
     # movement
     run_speed_min: float = 10.  # minimum speed to consider boats of running
@@ -31,4 +32,7 @@ class AnalysisConfiguration:
 
     # learning
     learning_baseline: int = 5  # time in min to consider as "baseline" during BMI to obtain gain
+
+    # filtering background calcium signal
+    filter_size: int = 500  # in frames
 

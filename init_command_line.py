@@ -45,8 +45,8 @@ folder_raw = Path("F:/data/raw")
 folder_save = Path("F:/data/process")
 default_path = folder_save / "default_var"
 
-folder_experiment = Path('F:/data/raw/ago13/221112/D01')
-folder_processed_experiment = Path('F:/data/process/ago18/221112/D01')
+folder_experiment = Path('F:/data/raw/ago16/221116/D05-2')
+folder_processed_experiment = Path('F:/data/process/ago16/221115/D04-2')
 folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
 if not Path(folder_suite2p).exists():
     Path(folder_suite2p).mkdir(parents=True, exist_ok=True)
@@ -142,9 +142,6 @@ from preprocess.process_data import run_all_experiments
 # TODO ANALYSIS
 # check if the chance of silence at the beginning of the experiment is not by chance. the increase is real. MEaning
 # there are not trains/bouts
-# plot the hits/min average per mice
-# obtain occupancy as per Vivek's paper
-# check if the whole brain is just more active (cursor is uniform instead of pseudo gaussian)
 # XGBoost? on what?
 
 # TODO CONTROLS
