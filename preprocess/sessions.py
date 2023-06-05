@@ -1,415 +1,497 @@
+"""
+This Python script is responsible for organizing and accessing data that is distributed across three hard drives.
+It manages the data to ensures seamless access regardless of its physical location.
+Additionally, it includes a dictionary with the different experiments and their respective sessions.
+And it creates a DataFrame with this information.
+"""
 
 import collections
 import os
 import pandas as pd
 import numpy as np
-from typing import Optional
 from pathlib import Path
 
+from utils.analysis_constants import AnalysisConstants
 
 __author__ = 'Nuria'
 
 
-_BMI_STIM_AGO = {
-    'D13': [
-        'ago13/221113/D02',
-        'ago13/221114/D03',
-        'ago13/221115/D04-2',
-        'ago13/221116/D05',
+_FOLDER_PATHS = {
+    'FA': ['m13', 'm15', 'm16', 'm18', 'm25'],
+    'FB': ['m21', 'm22', 'm26'],
+    'FC': ['m23', 'm27', 'm28', 'm29']
+}
+
+_D1act = {
+    'm13': [
+        'm13/221113/D02',
+        'm13/221114/D03',
+        'm13/221115/D04-2',
+        'm13/221116/D05',
     ],
-    'D15': [
-        'ago15/221113/D02',
-        'ago15/221114/D03',
-        'ago15/221115/D04-2',
-        'ago15/221116/D05',
-        'ago15/221117/D06-2',
-        'ago15/221119/D08',
-        'ago15/221119/D08-2',
+    'm15': [
+        'm15/221113/D02',
+        'm15/221114/D03',
+        'm15/221115/D04-2',
+        'm15/221116/D05',
+        'm15/221117/D06-2',
+        'm15/221119/D08',
+        'm15/221119/D08-2',
     ],
-    'D16': [
-        'ago16/221113/D02',
-        'ago16/221114/D03',
-        'ago16/221116/D05',
-        'ago16/221118/D07',
-        'ago16/221118/D07-2',
-        'ago16/221119/D08',
-        'ago16/221119/D08-2',
+    'm16': [
+        'm16/221113/D02',
+        'm16/221114/D03',
+        'm16/221116/D05',
+        'm16/221118/D07',
+        'm16/221118/D07-2',
+        'm16/221119/D08',
+        'm16/221119/D08-2',
     ],
-    'D18': [
-        'ago18/221113/D02',
-        'ago18/221114/D03',
-        'ago18/221116/D05',
-        'ago18/221117/D06-2',
-        'ago18/221118/D07',
-        'ago18/221118/D07-2',
-        'ago18/221118/D07-3',
+    'm18': [
+        'm18/221113/D02',
+        'm18/221114/D03',
+        'm18/221116/D05',
+        'm18/221117/D06-2',
+        'm18/221118/D07',
+        'm18/221118/D07-2',
+        'm18/221118/D07-3',
     ],
-    'D21': [
-        'ago21/230414/D06',
-        'ago21/230414/D06-2',
-        'ago21/230415/D07',
-        'ago21/230415/D07-2',
-        'ago21/230416/D08',
-        'ago21/230416/D08-2',
-        'ago21/230417/D09',
-        'ago21/230418/D10'
+    'm21': [
+        'm21/230414/D06',
+        'm21/230414/D06-2',
+        'm21/230415/D07',
+        'm21/230415/D07-2',
+        'm21/230416/D08',
+        'm21/230416/D08-2',
+        'm21/230417/D09',
+        'm21/230418/D10'
     ],
-    'D22': [
-        'ago22/230414/D03',
-        'ago22/230414/D03-2',
-        'ago22/230415/D04',
-        'ago22/230415/D04-2',
-        'ago22/230416/D05',
-        'ago22/230416/D05-2',
-        'ago22/230417/D06',
-        'ago22/230418/D07',
-        'ago22/230419/D08'
+    'm22': [
+        'm22/230414/D03',
+        'm22/230414/D03-2',
+        'm22/230415/D04',
+        'm22/230415/D04-2',
+        'm22/230416/D05',
+        'm22/230416/D05-2',
+        'm22/230417/D06',
+        'm22/230418/D07',
+        'm22/230419/D08'
     ],
-    'D23': [
-        'ago23/230419/D02',
-        'ago23/230420/D03',
-        'ago23/230420/D03-2',
-        'ago23/230420/D03-3'
-        'ago23/230421/D04',
-        'ago23/230421/D04-2',
-        'ago23/230422/D05'
+    'm23': [
+        'm23/230419/D02',
+        'm23/230420/D03',
+        'm23/230420/D03-2',
+        'm23/230420/D03-3',
+        'm23/230421/D04',
+        'm23/230421/D04-2',
+        'm23/230422/D05'
     ],
-    'D28': [
-        'ago28/230414/D06',
-        'ago28/230414/D06-2',
-        'ago28/230415/D07',
-        'ago28/230415/D07-2',
-        'ago28/230416/D08',
-        'ago28/230416/D08-2',
-        'ago28/230416/D08-3',
-        'ago28/230417/D09'
+    'm26': [
+        'm26/230414/D06',
+        'm26/230414/D06-2',
+        'm26/230415/D07',
+        'm26/230415/D07-2',
+        'm26/230416/D08',
+        'm26/230417/D09',
+        'm26/230417/D09-2'
     ],
-    'D29': [
-        'ago29/230419/D02',
-        'ago29/230419/D02-2',
-        'ago29/230420/D03',
-        'ago29/230420/D03-2',
-        'ago29/230420/D03-3',
-        'ago29/230421/D04',
-        'ago29/230421/D04-2'
+    'm28': [
+        'm28/230414/D06',
+        'm28/230414/D06-2',
+        'm28/230415/D07',
+        'm28/230415/D07-2',
+        'm28/230416/D08',
+        'm28/230416/D08-2',
+        'm28/230416/D08-3',
+        'm28/230417/D09'
+    ],
+    'm29': [
+        'm29/230419/D02',
+        'm29/230419/D02-2',
+        'm29/230420/D03',
+        'm29/230420/D03-2',
+        'm29/230420/D03-3',
+        'm29/230421/D04',
+        'm29/230421/D04-2'
     ]
 }
 
-_BMI_RANDOM = {
-    'D13': [
-        'ago13/221115/D04'],
-    'D15': [
-        'ago15/221115/D04',
-        'ago15/221116/D05-2',
-        'ago15/221117/D06',
-        'ago15/221118/D07',
-        'ago15/221118/D07-3',
+_RANDOM = {
+    'm13': [
+        'm13/221115/D04'
     ],
-    'D16': [
-        'ago16/221115/D04',
-        'ago16/221116/D05-2',
-        'ago16/221117/D06',
-        'ago16/221117/D06-2',
-        'ago16/221119/D08-3',
+    'm15': [
+        'm15/221115/D04',
+        'm15/221116/D05-2',
+        'm15/221117/D06',
+        'm15/221118/D07',
+        'm15/221118/D07-3',
     ],
-    'D18': [
-        'ago18/221115/D04',
-        'ago18/221116/D05-2',
-        'ago18/221117/D06',
-        'ago18/221119/D08',
-        'ago18/221119/D08-2',
+    'm16': [
+        'm16/221115/D04',
+        'm16/221116/D05-2',
+        'm16/221117/D06',
+        'm16/221117/D06-2',
+        'm16/221119/D08-3',
     ],
-    'D21': [
-        'ago21/230412/D04',
-        'ago21/230413/D05-1',
-        'ago21/230413/D05-2',
-        'ago21/230413/D05-3'
+    'm18': [
+        'm18/221115/D04',
+        'm18/221116/D05-2',
+        'm18/221117/D06',
+        'm18/221119/D08',
+        'm18/221119/D08-2',
     ],
-    'D22': [
-        'ago22/230413/D02',
-        'ago22/230413/D02-2',
-        'ago22/230424/D12-2'
+    'm21': [
+        'm21/230412/D04',
+        'm21/230413/D05',
+        'm21/230413/D05-2',
+        'm21/230413/D05-3'
     ],
-    'D23': [
-        'ago23/230423/D06',
-        'ago23/230424/D07',
-        'ago23/230424/D07-2',
-        'ago23/230424/D07-3'
+    'm22': [
+        'm22/230413/D02',
+        'm22/230413/D02-2',
+        'm22/230424/D12-2'
     ],
-    'D28': [
-        'ago28/230412/D04',
-        'ago28/230413/D05',
-        'ago28/230421/D13'
+    'm23': [
+        'm23/230423/D06',
+        'm23/230424/D07',
+        'm23/230424/D07-2',
+        'm23/230424/D07-3'
     ],
-    'D29': [
-        'ago29/230418/D01-2',
-        'ago29/230418/D01-3',
-        'ago29/230419/D02-3',
-        'ago29/230419/D02-4'
+    'm28': [
+        'm28/230412/D04',
+        'm28/230413/D05',
+        'm28/230421/D13'
+    ],
+    'm29': [
+        'm29/230418/D01-2',
+        'm29/230418/D01-3',
+        'm29/230419/D02-3',
+        'm29/230419/D02-4'
     ]
 }
 
-_BMI_STIM = {
-    'D13': [
-        'ago13/221112/D01'],
-    'D15': [
-        'ago15/221112/D01'],
-    'D16': [
-        'ago16/221112/D01'],
-    'D18': [
-        'ago18/221112/D01'],
-    'D21': [
-        'ago21/230406/D01'],
-    'D22': [
-        'ago22/230412/D01'],
-    'D23': [
-        'ago23/230418/D01'],
-    'D26': [
-        'ago26/230406/D01'],
-    'D28': [
-        'ago28/230406/D01'],
-    'D29': [
-        'ago29/230418/D01']
+_CONTROL_LIGHT = {
+    'm13': [
+        'm13/221112/D01'
+    ],
+    'm15': [
+        'm15/221112/D01'
+    ],
+    'm16': [
+        'm16/221112/D01'
+    ],
+    'm18': [
+        'm18/221112/D01'
+    ],
+    'm21': [
+        'm21/230406/D01'
+    ],
+    'm22': [
+        'm22/230412/D01'
+    ],
+    'm23': [
+        'm23/230418/D01'
+    ],
+    'm26': [
+        'm26/230406/D01'
+    ],
+    'm28': [
+        'm28/230406/D01'
+    ],
+    'm29': [
+        'm29/230418/D01'
+    ]
 }
 
-_BMI_AGO = {
-    'D13': [
-        'ago13/221117/D06'],
-    'D15': [
-        'ago15/221118/D07-2'],
-    'D16': [
-        'ago16/221115/D04-2'],
-    'D18': [
-        'ago18/221116/D05-3'],
-    'D21': [
-        'ago21/230421/D13-3'],
-    'D22': [
-        'ago22/230422/D10'],
-    'D23': [
-        'ago23/230422/D05-2'],
-    'D26': [
-        'ago26/230418/D10'],
-    'D28': [
-        'ago28/230421/D13-2'],
-    'D29': [
-        'ago29/230422/D05']
+_CONTROL_AGO = {
+    'm13': [
+        'm13/221117/D06'
+    ],
+    'm15': [
+        'm15/221118/D07-2'
+    ],
+    'm16': [
+        'm16/221115/D04-2'
+    ],
+    'm18': [
+        'm18/221116/D05-3'
+    ],
+    'm21': [
+        'm21/230421/D13-3'
+    ],
+    'm22': [
+        'm22/230422/D10'
+    ],
+    'm23': [
+        'm23/230422/D05-2'
+    ],
+    'm26': [
+        'm26/230418/D10'
+    ],
+    'm28': [
+        'm28/230421/D13-2'
+    ],
+    'm29': [
+        'm29/230422/D05'
+    ]
 }
 
 _NO_AUDIO = {
-    'D21': [
-        'ago21/230407/D02',
-        'ago21/230408/D03',
-        'ago21/230421/D13-2'],
-    'D22': [
-        'ago22/230422/D10-2',
-        'ago22/230423/D11',
-        'ago22/230424/D12'],
-    'D23': [
-        'ago23/230419/D02-2',
-        'ago23/230419/D02-3',
-        'ago23/230422/D05-3'],
-    'D28': [
-        'ago28/230407/D02',
-        'ago28/230408/D03',
-        'ago28/230408/D03-2'],
-    'D29': [
-        'ago29/230422/D05-2',
-        'ago29/230422/D05-3',
-        'ago29/230424/D07']
+    'm21': [
+        'm21/230407/D02',
+        'm21/230408/D03',
+        'm21/230421/D13-2'
+    ],
+    'm22': [
+        'm22/230422/D10-2',
+        'm22/230423/D11',
+        'm22/230424/D12'
+    ],
+    'm23': [
+        'm23/230419/D02-2',
+        'm23/230419/D02-3',
+        'm23/230422/D05-3'
+    ],
+    'm28': [
+        'm28/230407/D02',
+        'm28/230408/D03',
+        'm28/230408/D03-2'
+    ],
+    'm29': [
+        'm29/230422/D05-2',
+        'm29/230422/D05-3',
+        'm29/230424/D07'
+    ]
 }
 
 _DELAY = {
-    'D21': [
-        'ago21/230419/D11',
-        'ago21/230420/D12',
-        'ago21/230421/D13'],
-    'D22': [
-        'ago22/230420/D9',
-        'ago22/230423/D11-2',
-        'ago22/230423/D11-3'],
-    'D23': [
-        'ago23/230423/D06-2',
-        'ago23/230423/D06-3',
-        'ago23/230423/D06-4'],
-    'D28': [
-        'ago28/230418/D10',
-        'ago28/230419/D11',
-        'ago28/230420/D12'],
-    'D29': [
-        'ago29/230423/D06',
-        'ago29/230423/D06-2',
-        'ago29/230423/D06-3']
+    'm21': [
+        'm21/230419/D11',
+        'm21/230420/D12',
+        'm21/230421/D13'
+    ],
+    'm22': [
+        'm22/230420/D09',
+        'm22/230423/D11-2',
+        'm22/230423/D11-3'
+    ],
+    'm23': [
+        'm23/230423/D06-2',
+        'm23/230423/D06-3',
+        'm23/230423/D06-4'
+    ],
+    'm28': [
+        'm28/230418/D10',
+        'm28/230419/D11',
+        'm28/230420/D12'
+    ],
+    'm29': [
+        'm29/230423/D06',
+        'm29/230423/D06-2',
+        'm29/230423/D06-3'
+    ]
 }
 
 _EXTINCTION = {
-    'D21': [
-        'ago21/230418/D10'],
-    'D22': [
-        'ago22/230419/D08'],
-    'D23': [
-        'ago23/230422/D05'],
-    'D26': [
-        'ago26/230417/D09-2'],
-    'D28': [
-        'ago28/230417/D09']
+    'm21': [
+        'm21/230418/D10'
+    ],
+    'm22': [
+        'm22/230419/D08'
+    ],
+    'm23': [
+        'm23/230422/D05'
+    ],
+    'm26': [
+        'm26/230417/D09-2'
+    ],
+    'm28': [
+        'm28/230417/D09'
+    ]
 }
 
-_BASIC = {
-    'D25': [
-        'ago25/230425/D11',
-        'ago25/230425/D11-2'
+_CONTROL = {
+    'm25': [
+        'm25/230425/D11',
+        'm25/230425/D11-2',
+        'm25/230425/D11-3'
     ],
-    'D26': [
-        'ago26/230425/D11',
-        'ago26/230425/D11-2'
+    'm26': [
+        'm26/230425/D11',
+        'm26/230425/D11-2',
+        'm26/230425/D11-3'
     ],
-    'D27': [
-        'ago27/230424/D02',
-        'ago27/230424/D02-2'
+    'm27': [
+        'm27/230424/D02',
+        'm27/230424/D02-2',
+        'm27/230424/D02-3'
     ],
-    'D28': [
-        'ago28/230424/D14',
-        'ago28/230425/D15'
+    'm28': [
+        'm28/230424/D14',
+        'm28/230424/D14-2',
+        'm28/230425/D15'
     ],
-    'D29': [
-        'ago29/230425/D08'
+    'm29': [
+        'm29/230425/D08'
     ]
 }
 
 _BEHAVIOR = {
-    'D13': [
-        'ago13/221113/D02'],
-    'D15': [
-        'ago15/221113/D02'],
-    'D16': [
-        'ago16/221113/D02'],
-    'D18': [
-        'ago18/221113/D02'],
-    'D21': [
-        'ago21/230407/D02',
-        'ago21/230408/D03',
+    'm13': [
+        'm13/221113/D02'
     ],
-    'D22': [
-        'ago22/230413/D02',
-        'ago22/230419/D08'
+    'm15': [
+        'm15/221113/D02'
     ],
-    'D23': [
-        'ago23/230419/D02',
-        'ago23/230422/D05-3',
+    'm16': [
+        'm16/221113/D02'
     ],
-    'D25': [
-        'ago25/230407/D02',
-        'ago25/230408/D03'
+    'm18': [
+        'm18/221113/D02'
     ],
-    'D26': [
-        'ago26/230407/D02',
-        'ago26/230407/D03',
+    'm21': [
+        'm21/230407/D02',
+        'm21/230408/D03'
     ],
-    'D28': [
-        'ago28/230407/D02',
-        'ago28/230407/D03',
+    'm22': [
+        'm22/230413/D02',
+        'm22/230419/D08'
     ],
-    'D29': [
-        'ago29/230419/D02',
+    'm23': [
+        'm23/230419/D02',
+        'm23/230422/D05-3'
+    ],
+    'm25': [
+        'm25/230407/D02',
+        'm25/230408/D03'
+    ],
+    'm26': [
+        'm26/230407/D02',
+        'm26/230408/D03'
+    ],
+    'm28': [
+        'm28/230407/D02'
+    ],
+    'm29': [
+        'm29/230419/D02'
     ]
 }
 
 _MOTOR_beh_before_BMI = {
-    'D13': [
-        'ago13/221113/D02',
-        'ago13/221114/D03'
+    'm13': [
+        'm13/221113/D02',
+        'm13/221114/D03'
     ],
-    'D15': [
-        'ago15/221113/D02',
-        'ago15/221114/D03'
+    'm15': [
+        'm15/221113/D02',
+        'm15/221114/D03'
     ],
-    'D16': [
-        'ago16/221113/D02',
-        'ago16/221114/D03'
+    'm16': [
+        'm16/221113/D02',
+        'm16/221114/D03'
     ],
-    'D18': [
-        'ago18/221113/D02',
-        'ago18/221114/D03'
+    'm18': [
+        'm18/221113/D02',
+        'm18/221114/D03'
     ],
-    'D21': [
-        'ago21/230407/D02',
-        'ago21/230408/D03'
+    'm21': [
+        'm21/230407/D02',
+        'm21/230408/D03'
     ],
-    'D22': [
-        'ago22/230413/D02',
-        'ago22/230419/D08'
+    'm22': [
+        'm22/230413/D02',
+        'm22/230419/D08'
     ],
-    'D23': [
-        'ago23/230419/D02',
-        'ago23/230422/D05-3',
+    'm23': [
+        'm23/230419/D02',
+        'm23/230422/D05-3'
     ],
-    'D25': [
-        'ago25/230407/D02',
-        'ago25/230408/D03',
+    'm25': [
+        'm25/230407/D02',
+        'm25/230408/D03'
     ],
-    'D26': [
-        'ago26/230407/D02',
-        'ago26/230407/D03',
+    'm26': [
+        'm26/230407/D02',
+        'm26/230408/D03'
     ],
-    'D28': [
-        'ago28/230407/D02',
-        'ago28/230407/D03',
+    'm28': [
+        'm28/230407/D02'
     ],
-    'D29': [
-        'ago29/230419/D02',
+    'm29': [
+        'm29/230419/D02'
     ]
 
 }
 
 _MOTOR_initial_behavior = {
-    'D13': [
-        'ago13/221113/D02',
+    'm13': [
+        'm13/221113/D02'
     ],
-    'D15': [
-        'ago15/221113/D02',
+    'm15': [
+        'm15/221113/D02'
     ],
-    'D16': [
-        'ago16/221113/D02',
+    'm16': [
+        'm16/221113/D02'
     ],
-    'D18': [
-        'ago18/221113/D02',
+    'm18': [
+        'm18/221113/D02'
     ]
 }
 
 
 def get_all_sessions() -> pd.DataFrame:
     """ function to get a df with all sessions"""
-    df_BMI_STIM_AGO = pd.DataFrame(index=np.concatenate(list(_BMI_STIM_AGO.values())))
-    df_BMI_STIM_AGO['experiment_type'] = 'BMI_STIM_AGO'
-    df_BMI_RANDOM = pd.DataFrame(index=np.concatenate(list(_BMI_RANDOM.values())))
-    df_BMI_RANDOM['experiment_type'] = 'BMI_CONTROL_RANDOM'
-    df_BMI_STIM = pd.DataFrame(index=np.concatenate(list(_BMI_STIM.values())))
-    df_BMI_STIM['experiment_type'] = 'BMI_CONTROL_LIGHT'
-    df_BMI_AGO = pd.DataFrame(index=np.concatenate(list(_BMI_AGO.values())))
-    df_BMI_AGO['experiment_type'] = 'BMI_CONTROL_AGO'
-    df_experiments = pd.concat([pd.concat([df_BMI_STIM_AGO, df_BMI_RANDOM]),
-                                pd.concat([df_BMI_STIM, df_BMI_AGO])])
+    df_d1act = pd.DataFrame(index=np.concatenate(list(_D1act.values())))
+    df_d1act['experiment_type'] = 'D1act'
+    df_c = pd.DataFrame(index=np.concatenate(list(_CONTROL.values())))
+    df_c['experiment_type'] = 'CONTROL'
+    df_c_light = pd.DataFrame(index=np.concatenate(list(_CONTROL_LIGHT.values())))
+    df_c_light['experiment_type'] = 'CONTROL_LIGHT'
+    df_c_ago = pd.DataFrame(index=np.concatenate(list(_CONTROL_AGO.values())))
+    df_c_ago['experiment_type'] = 'CONTROL_AGO'
+    df_random = pd.DataFrame(index=np.concatenate(list(_RANDOM.values())))
+    df_random['experiment_type'] = 'RANDOM'
+    df_no_audio = pd.DataFrame(index=np.concatenate(list(_NO_AUDIO.values())))
+    df_no_audio['experiment_type'] = 'NO_AUDIO'
+    df_delay = pd.DataFrame(index=np.concatenate(list(_DELAY.values())))
+    df_delay['experiment_type'] = 'DELAY'
+    df_extinction = pd.DataFrame(index=np.concatenate(list(_EXTINCTION.values())))
+    df_extinction['experiment_type'] = 'EXTINCTION'
+    df_behavior = pd.DataFrame(index=np.concatenate(list(_BEHAVIOR.values())))
+    df_behavior['experiment_type'] = 'BEHAVIOR'
+    list_experiments = [df_d1act, df_c, df_c_light, df_c_ago, df_random, df_no_audio, df_delay, df_extinction,
+                        df_behavior]
+    df_experiments = pd.concat(list_experiments)
     return df_experiments.sort_index().reset_index()
 
 
-def get_sessions_df(folder_raw: Path, experiment_type: str) -> pd.DataFrame:
+def get_sessions_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
     """ Function to retrieve the name of the sessions that will be used depending on the experiment type
     and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
     df_experiments = get_all_sessions()
-    if experiment_type == 'BMI_STIM_AGO':
-        dict_items = _BMI_STIM_AGO.items()
-    elif experiment_type == 'BMI_CONTROL_RANDOM':
-        dict_items = _BMI_RANDOM.items()
-    elif experiment_type == 'BMI_CONTROL_LIGHT':
-        dict_items = _BMI_STIM.items()
-    elif experiment_type == 'BMI_CONTROL_AGO':
-        dict_items = _BMI_AGO.items()
+    if experiment_type == 'D1act':
+        dict_items = _D1act.items()
+    elif experiment_type == 'CONTROL':
+        dict_items = _CONTROL.items()
+    elif experiment_type == 'CONTROL_LIGHT':
+        dict_items = _CONTROL_LIGHT.items()
+    elif experiment_type == 'CONTROL_AGO':
+        dict_items = _CONTROL_AGO.items()
+    elif experiment_type == 'RANDOM':
+        dict_items = _RANDOM.items()
+    elif experiment_type == 'NO_AUDIO':
+        dict_items = _NO_AUDIO.items()
+    elif experiment_type == 'DELAY':
+        dict_items = _DELAY.items()
+    elif experiment_type == 'EXTINCTION':
+        dict_items = _EXTINCTION.items()
     elif experiment_type == 'BEHAVIOR':
         dict_items = _BEHAVIOR.items()
     else:
         raise ValueError(
             f'Could not find any controls for {experiment_type} '
-            f'try BMI_STIM_AGO, BMI_CONTROL_RANDOM, BMI_CONTROL_LIGHT, BMI_CONTROL_AGO or BEHAVIOR')
+            f'try D1act, CONTROL, CONTROL_LIGHT, CONTROL_AGO, RANDOM, NO_AUDIO, DELAY, EXTINCTION or BEHAVIOR')
     ret = collections.defaultdict(list)
     for mice_name, sessions_per_type in dict_items:
         for day_index, session_path in enumerate(sessions_per_type):
@@ -434,21 +516,23 @@ def get_sessions_df(folder_raw: Path, experiment_type: str) -> pd.DataFrame:
             ret['session_path'].append(session_path)
             ret['day_index'].append(day_index)
 
+            folder_raw = Path(folder_list[find_folder_path(mice_name)])
             dir_files = Path(folder_raw) / session_path
             for file_name in os.listdir(dir_files):
-                if experiment_type != 'BEHAVIOR':
+                if experiment_type.lower() not in ['behavior', 'extinction']:
                     if file_name[:2] == 'im':
                         dir_im = Path(folder_raw) / session_path / 'im'
                         for file_name_im_dir in os.listdir(dir_im):
-                            dir_im2 = dir_im / file_name_im_dir
-                            for file_name_im_file in os.listdir(dir_im2):
-                                if file_name_im_file[:8] == 'baseline':
-                                    ret['Baseline_im'].append(file_name_im_file)
-                                    ret['Voltage_Baseline'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
-                                elif file_name_im_file[:8] in ['BMI_stim', 'RandomDR']:
-                                    ret['Voltage_rec'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
-                                    ret['Experiment_im'].append(file_name_im_file)
-                                    ret['Experiment_dir'].append(file_name_im_dir)
+                            if file_name_im_dir.lower() not in ['behavior', 'extinction']:
+                                dir_im2 = dir_im / file_name_im_dir
+                                for file_name_im_file in os.listdir(dir_im2):
+                                    if file_name_im_file[:8] == 'baseline':
+                                        ret['Baseline_im'].append(file_name_im_file)
+                                        ret['Voltage_Baseline'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
+                                    elif file_name_im_file[:8] in ['BMI_stim', 'RandomDR']:
+                                        ret['Voltage_rec'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
+                                        ret['Experiment_im'].append(file_name_im_file)
+                                        ret['Experiment_dir'].append(file_name_im_dir)
 
                     if file_name[:10] == 'BaselineOn':
                         ret['Baseline_online'].append(file_name)
@@ -482,7 +566,7 @@ def get_sessions_df(folder_raw: Path, experiment_type: str) -> pd.DataFrame:
     return pd.DataFrame(ret)
 
 
-def get_behav_df(folder_experiments: Path, experiment_type: str) -> pd.DataFrame:
+def get_behav_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
     """ Function to retrieve the name of the sessions that will be used depending on the experiment type
     and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
     if experiment_type == 'Initial_behavior':
@@ -505,12 +589,12 @@ def get_behav_df(folder_experiments: Path, experiment_type: str) -> pd.DataFrame
             ret['session_path'].append(session_path)
             ret['day_index'].append(day_index)
 
-            dir_files = Path(folder_experiments) / session_path
+            folder_raw = Path(folder_list[find_folder_path(mice_name)])
+            dir_files = Path(folder_raw) / session_path
             for file_name in os.listdir(dir_files):
                 if file_name[:2] == 'mo':
-                    dir_motor = Path(folder_experiments) / session_path / 'motor'
+                    dir_motor = Path(folder_raw) / session_path / 'motor'
                     for file_name_motor_file in os.listdir(dir_motor):
-                        # TODO check ending for behav and inital
                         if file_name_motor_file[-7:-4] == ending_str:
                             [_, trigger_XY, _, _, _] = file_name_motor_file.split('_')
                             if trigger_XY == 'XY':
@@ -520,3 +604,53 @@ def get_behav_df(folder_experiments: Path, experiment_type: str) -> pd.DataFrame
 
     return pd.DataFrame(ret)
 
+
+def get_extinction(folder_list: list) -> pd.DataFrame:
+    """ Function to retrieve the name of the sessions that will be used depending on the experiment type
+    and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
+    dict_items = _EXTINCTION.items()
+    ret = collections.defaultdict(list)
+    for mice_name, sessions_per_type in dict_items:
+        for day_index, session_path in enumerate(sessions_per_type):
+            [mice_name, session_date, day_init] = session_path.split('/')
+            ret['mice_name'].append(mice_name)
+            ret['session_date'].append(session_date)
+            ret['day_init'].append(day_init)
+            ret['session_path'].append(session_path)
+            flag_extinction = False
+            flag_extinction_2 = False
+            folder_raw = Path(folder_list[find_folder_path(mice_name)])
+            dir_files = Path(folder_raw) / session_path
+            for file_name in os.listdir(dir_files):
+                if file_name[:10] == 'BaselineOn':
+                    ret['Baseline_online'].append(file_name)
+                elif file_name[:10] == 'BMI_online':
+                    ret['BMI_online'].append(file_name)
+                elif file_name.lower()[:10] == 'extinction':
+                    if flag_extinction:
+                        ret['extinction_2'].append(file_name)
+                        flag_extinction_2 = True
+                    else:
+                        ret['extinction'].append(file_name)
+                        flag_extinction = True
+            if not flag_extinction:
+                ret['extinction'].append('None')
+            if not flag_extinction_2:
+                ret['extinction_2'].append('None')
+
+    return pd.DataFrame(ret)
+
+
+def find_folder_path(target: str):
+    """ Function to find to which hard drive each mice belongs to """
+    for key, paths in _FOLDER_PATHS.items():
+        if target in paths:
+            return key
+    return None
+
+
+def get_sessions_parquet(folder_save: Path, folder_list: list):
+    """ Function to get every type of experiment DF saved in parquet """
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = get_sessions_df(folder_list, experiment_type)
+        df.to_parquet(folder_save / ("df_" + experiment_type + ".parquet"))

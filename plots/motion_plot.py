@@ -43,8 +43,8 @@ def plot_controls(df_motion_controls: pd.DataFrame, folder_plots: Path):
     for feature in df_motion_controls.columns[4:]:
         fig1, ax1 = ut_plots.open_plot()
         sns.boxplot(data=df_motion_controls, x='experiment', y=feature, ax=ax1)
-        a = df_motion_controls[df_motion_controls.experiment == 'BMI_STIM_AGO'][feature]
-        b = df_motion_controls[df_motion_controls.experiment == 'BMI_CONTROL_RANDOM'][feature]
+        a = df_motion_controls[df_motion_controls.experiment == 'D1act'][feature]
+        b = df_motion_controls[df_motion_controls.experiment == 'RANDOM'][feature]
         c = df_motion_controls[df_motion_controls.experiment == 'CONTROL'][feature]
         ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
         ut_plots.get_pvalues(a, c, ax1, pos=1, height=a[~np.isnan(a)].max(), ind=True)
@@ -54,8 +54,8 @@ def plot_controls(df_motion_controls: pd.DataFrame, folder_plots: Path):
         sns.boxplot(data=df_motion_controls, x='mice', y=feature, hue='experiment', ax=ax2)
         for mm, mouse in enumerate(mice):
             mpm = df_motion_controls[df_motion_controls.mice == mouse]
-            ut_plots.get_pvalues(mpm[mpm.experiment == 'BMI_STIM_AGO'][feature],
-                                 mpm[mpm.experiment == 'BMI_CONTROL_RANDOM'][feature],
+            ut_plots.get_pvalues(mpm[mpm.experiment == 'D1act'][feature],
+                                 mpm[mpm.experiment == 'RANDOM'][feature],
                                  ax2, pos=mm, height=mpm[feature].dropna().mean(), ind=True)
         ut_plots.save_plot(fig2, ax2, folder_plots, 'mice', feature, False)
         # Take into account that total values are dependent on size of experiment, so only features per min should be

@@ -13,15 +13,16 @@ from utils.analysis_constants import AnalysisConstants
 from utils.analysis_command import AnalysisConfiguration
 
 
-def obtain_motion_data(folder_raw: Path, speed_min=AnalysisConfiguration.run_speed_min) -> Tuple[pd.DataFrame, np.array]:
+def obtain_motion_data(folder_list: list, speed_min=AnalysisConfiguration.run_speed_min) -> Tuple[pd.DataFrame, np.array]:
     """ function to compare motion characteristics between baseline and experiment """
     ret = collections.defaultdict(list)
     speed = np.empty(0)
     for experiment_type in AnalysisConstants.experiment_types:
-        df_sessions = ss.get_sessions_df(folder_raw, experiment_type)
+        df_sessions = ss.get_sessions_df(folder_list, experiment_type)
         mice = df_sessions.mice_name.unique()
         for aa, mouse in enumerate(mice):
             df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
+            folder_raw = Path(folder_list[ss.find_folder_path(mouse)])
             for index, row in df_sessions_mouse.iterrows():
                 file_path = Path(folder_raw) / row['session_path'] / 'motor'
                 XY_baseline = ma.extract_XY_data(file_path / row['trigger_baseline'], file_path/ row['XY_baseline'])
@@ -47,14 +48,15 @@ def obtain_motion_data(folder_raw: Path, speed_min=AnalysisConfiguration.run_spe
     return pd.DataFrame(ret), speed
 
 
-def obtain_motion_behav_data(folder_raw: Path, speed_min=AnalysisConfiguration.run_speed_min) -> pd.DataFrame:
+def obtain_motion_behav_data(folder_list: list, speed_min=AnalysisConfiguration.run_speed_min) -> pd.DataFrame:
     """ function to compare motion characteristics between baseline and experiment """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.behav_type:
-        df_sessions = ss.get_behav_df(folder_raw, experiment_type)
+        df_sessions = ss.get_behav_df(folder_list, experiment_type)
         mice = df_sessions.mice_name.unique()
         for aa, mouse in enumerate(mice):
             df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
+            folder_raw = Path(folder_list[ss.find_folder_path(mouse)])
             for index, row in df_sessions_mouse.iterrows():
                 file_path = Path(folder_raw) / row['session_path'] / 'motor'
                 XY = ma.extract_XY_data(file_path / row['trigger'], file_path / row['XY'])

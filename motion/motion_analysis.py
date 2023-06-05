@@ -17,7 +17,7 @@ def extract_XY_data(trigger_file: str, XY_file: str) -> traja:
     if len(XY_raw_data) > 0:
         XY_raw_data = XY_raw_data.rename(columns={"xPos": "x", "yPos": "y"})
         if len(trigger_data) > 0 :
-            input_times = np.where(trigger_data.unitLabel == "Input_trigger")[0]
+            input_times = np.where(trigger_data.SystemMsg == "Start")[0]
             if len(input_times) > 0:
                 synch_event = input_times[-1]
             else:
