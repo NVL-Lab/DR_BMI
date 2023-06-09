@@ -19,7 +19,7 @@ def obtain_gain(folder_list: list) -> pd.DataFrame:
         mice = df_sessions.mice_name.unique()
         for aa, mouse in enumerate(mice):
             df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
-            folder_raw = Path(folder_list[ss.find_folder_path(mouse)])
+            folder_raw = Path(folder_list[ss.find_folder_path(mouse)]) / 'raw'
             for index, row in df_sessions_mouse.iterrows():
                 folder_path = folder_raw / row['session_path']
                 ret['mice'].append(mouse)
@@ -41,7 +41,7 @@ def obtain_extinction(folder_list: list) -> pd.DataFrame:
     mice = df_sessions.mice_name.unique()
     for aa, mouse in enumerate(mice):
         df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
-        folder_raw = Path(folder_list[ss.find_folder_path(mouse)])
+        folder_raw = Path(folder_list[ss.find_folder_path(mouse)]) / 'raw'
         for index, row in df_sessions_mouse.iterrows():
             folder_path = folder_raw / row['session_path']
             ret['mice'].append(mouse)

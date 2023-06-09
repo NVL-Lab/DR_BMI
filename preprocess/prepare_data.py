@@ -60,6 +60,10 @@ def prepare_ops_1st_pass(default_path: Path, ops_path: Path) -> dict:
     """ Function to modify the default ops file before 1st pass"""
     aux_ops = np.load(Path(default_path) / "default_ops.npy", allow_pickle=True)
     ops = aux_ops.take(0)
+    ops['delete_bin'] = True
+    ops['move_bin'] = False
+    ops['keep_movie_raw'] = False
+    ops['anatomical_only'] = 2
     np.save(ops_path, ops, allow_pickle=True)
     return ops
 

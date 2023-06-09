@@ -516,7 +516,7 @@ def get_sessions_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
             ret['session_path'].append(session_path)
             ret['day_index'].append(day_index)
 
-            folder_raw = Path(folder_list[find_folder_path(mice_name)])
+            folder_raw = Path(folder_list[find_folder_path(mice_name)]) / 'raw'
             dir_files = Path(folder_raw) / session_path
             for file_name in os.listdir(dir_files):
                 if experiment_type.lower() not in ['behavior', 'extinction']:
@@ -589,7 +589,7 @@ def get_behav_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
             ret['session_path'].append(session_path)
             ret['day_index'].append(day_index)
 
-            folder_raw = Path(folder_list[find_folder_path(mice_name)])
+            folder_raw = Path(folder_list[find_folder_path(mice_name)])/ 'raw'
             dir_files = Path(folder_raw) / session_path
             for file_name in os.listdir(dir_files):
                 if file_name[:2] == 'mo':
@@ -619,7 +619,7 @@ def get_extinction(folder_list: list) -> pd.DataFrame:
             ret['session_path'].append(session_path)
             flag_extinction = False
             flag_extinction_2 = False
-            folder_raw = Path(folder_list[find_folder_path(mice_name)])
+            folder_raw = Path(folder_list[find_folder_path(mice_name)]) / 'raw'
             dir_files = Path(folder_raw) / session_path
             for file_name in os.listdir(dir_files):
                 if file_name[:10] == 'BaselineOn':

@@ -172,6 +172,6 @@ folder_plots = Path('F:/data/process/plots/learning')
 
 
 ###
-folder_list = {'FA': 'D:/data/raw', 'FB': 'F:/data/raw', 'FC': 'G:/data/raw'}
+folder_list = {'FA': 'D:/data', 'FB': 'F:/data', 'FC': 'G:/data'}
 folder_data = Path("C:/Users/Nuria/Documents/DATA/D1exp/df_data")
 folder_plots = Path("C:/Users/Nuria/Documents/DATA/D1exp/plots")

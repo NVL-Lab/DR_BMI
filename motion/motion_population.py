@@ -22,7 +22,7 @@ def obtain_motion_data(folder_list: list, speed_min=AnalysisConfiguration.run_sp
         mice = df_sessions.mice_name.unique()
         for aa, mouse in enumerate(mice):
             df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
-            folder_raw = Path(folder_list[ss.find_folder_path(mouse)])
+            folder_raw = Path(folder_list[ss.find_folder_path(mouse)]) / 'raw'
             for index, row in df_sessions_mouse.iterrows():
                 file_path = Path(folder_raw) / row['session_path'] / 'motor'
                 XY_baseline = ma.extract_XY_data(file_path / row['trigger_baseline'], file_path/ row['XY_baseline'])
@@ -56,7 +56,7 @@ def obtain_motion_behav_data(folder_list: list, speed_min=AnalysisConfiguration.
         mice = df_sessions.mice_name.unique()
         for aa, mouse in enumerate(mice):
             df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
-            folder_raw = Path(folder_list[ss.find_folder_path(mouse)])
+            folder_raw = Path(folder_list[ss.find_folder_path(mouse)]) / 'raw'
             for index, row in df_sessions_mouse.iterrows():
                 file_path = Path(folder_raw) / row['session_path'] / 'motor'
                 XY = ma.extract_XY_data(file_path / row['trigger'], file_path / row['XY'])

@@ -15,15 +15,19 @@ def plot_movement_features(df_motion: pd.DataFrame, folder_plots: Path):
     """ Function to plot all features of movement """
 
     mice = df_motion.mice.unique()
+    copper_palette = sns.color_palette("copper", n_colors=len(mice))
     for feature in df_motion.columns[4:len(df_motion.columns) - 1]:
+        df_group = df_motion.groupby(["mice", "Laser"]).mean().reset_index()
+        order_fig = ['ON', 'OFF', 'BMI']
         fig1, ax1 = ut_plots.open_plot()
-        sns.boxplot(data=df_motion, x='Laser', y=feature, ax=ax1)
-        a = df_motion[df_motion.Laser == 'ON'][feature]
-        b = df_motion[df_motion.Laser == 'OFF'][feature]
-        c = df_motion[df_motion.Laser == 'BMI'][feature]
-        ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
-        ut_plots.get_pvalues(a, c, ax1, pos=1, height=a[~np.isnan(a)].max(), ind=True)
-        ut_plots.get_pvalues(b, c, ax1, pos=1.5, height=a[~np.isnan(a)].max()*1.2, ind=True)
+        sns.boxplot(data=df_group, x='Laser', y=feature, color='gray', order=order_fig, ax=ax1)
+        sns.stripplot(data=df_group, x="Laser", y=feature, hue='mice', order=order_fig, palette=copper_palette, ax=ax1)
+        a = df_group[df_group.Laser == 'ON'][feature]
+        b = df_group[df_group.Laser == 'OFF'][feature]
+        c = df_group[df_group.Laser == 'BMI'][feature]
+        ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max(), ind=False)
+        ut_plots.get_pvalues(a, c, ax1, pos=1, height=a[~np.isnan(a)].max(), ind=False)
+        ut_plots.get_pvalues(b, c, ax1, pos=1.5, height=a[~np.isnan(a)].max()*1.2, ind=False)
         ut_plots.save_plot(fig1, ax1, folder_plots, 'behavior_experiment', feature, False)
         fig2, ax2 = ut_plots.open_plot()
         sns.boxplot(data=df_motion, x='mice', y=feature, hue='Laser', ax=ax2)
@@ -60,3 +64,10 @@ def plot_controls(df_motion_controls: pd.DataFrame, folder_plots: Path):
         ut_plots.save_plot(fig2, ax2, folder_plots, 'mice', feature, False)
         # Take into account that total values are dependent on size of experiment, so only features per min should be
         # use for this part of the analysis
+
+
+def remove_bad_mice(df_motion: pd.DataFrame, mouse :str = 'm25'):
+    """ to remove from the df_motion the entries of mice that had no motion difference with the laser """
+    mice = df_motion.mice.unique()
+    mice = mice[mice != mouse]
+    return df_motion[df_motion.mice.isin(mice)]
