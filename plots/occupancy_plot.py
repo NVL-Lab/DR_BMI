@@ -8,6 +8,11 @@ from pathlib import Path
 from utils import util_plots as ut_plots
 
 
+def create_df_occupancy():
+    """ function that creates a df with all the data about occupancy of the neural cursor """
+    
+
+
 def plot_occupancy(folder_save: Path, folder_plots: Path):
     """ Function to plot occupancy and hits from simulated BMI """
     df_occupancy = pd.read_parquet(Path(folder_save) / "df_occupancy.parquet")

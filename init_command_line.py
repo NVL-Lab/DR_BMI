@@ -22,7 +22,7 @@ from preprocess.prepare_data import prepare_ops_1st_pass
 from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 from utils import util_plots as ut_plots
-from analysis import learning
+from analysis import learning_analysis
 
 interactive(True)
 

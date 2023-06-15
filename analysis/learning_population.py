@@ -8,7 +8,7 @@ from pathlib import Path
 
 from preprocess import sessions as ss
 from utils.analysis_constants import AnalysisConstants
-from analysis import learning
+from analysis import learning_analysis
 
 
 def obtain_gain(folder_list: list) -> pd.DataFrame:
@@ -28,7 +28,7 @@ def obtain_gain(folder_list: list) -> pd.DataFrame:
                 ret['previous_session'].append(row['previous_session'])
                 ret['day_index'].append(row['day_index'])
                 ret['experiment'].append(experiment_type)
-                bmi_hits, bmi_gain = learning.gain_self_stim(folder_path / row['BMI_online'])
+                bmi_hits, bmi_gain = learning_analysis.gain_self_stim(folder_path / row['BMI_online'])
                 ret['gain'].append(bmi_gain)
                 ret['hits_per_min'].append(bmi_hits)
     return pd.DataFrame(ret)
@@ -46,17 +46,17 @@ def obtain_extinction(folder_list: list) -> pd.DataFrame:
             folder_path = folder_raw / row['session_path']
             ret['mice'].append(mouse)
             ret['session_path'].append(row['session_path'])
-            bmi_hits, bmi_gain = learning.gain_self_stim(folder_path / row['BMI_online'])
+            bmi_hits, bmi_gain = learning_analysis.gain_self_stim(folder_path / row['BMI_online'])
             ret['BMI_gain'].append(bmi_gain)
             ret['BMI_hpm'].append(bmi_hits)
-            ext_hits, ext_gain = learning.gain_self_stim(folder_path / row['extinction'])
+            ext_hits, ext_gain = learning_analysis.gain_self_stim(folder_path / row['extinction'])
             ret['ext_gain'].append(ext_gain)
             ret['ext_hpm'].append(ext_hits)
             if row['extinction_2'] == 'None':
                 ret['ext2_gain'].append('None')
                 ret['ext2_hpm'].append('None')
             else:
-                ext2_hits, ext2_gain = learning.gain_self_stim(folder_path / row['extinction_2'])
+                ext2_hits, ext2_gain = learning_analysis.gain_self_stim(folder_path / row['extinction_2'])
                 ret['ext2_gain'].append(ext2_gain)
                 ret['ext2_hpm'].append(ext2_hits)
     return pd.DataFrame(ret)

@@ -117,9 +117,6 @@ _D1act = {
 }
 
 _RANDOM = {
-    'm13': [
-        'm13/221115/D04'
-    ],
     'm15': [
         'm15/221115/D04',
         'm15/221116/D05-2',
@@ -641,6 +638,68 @@ def get_extinction(folder_list: list) -> pd.DataFrame:
     return pd.DataFrame(ret)
 
 
+def get_simulations_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
+    """ Function to retrieve the name of the simulations that will be used depending on the experiment type
+    and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
+    df_experiments = get_all_sessions()
+    if experiment_type == 'D1act':
+        dict_items = _D1act.items()
+    elif experiment_type == 'CONTROL':
+        dict_items = _CONTROL.items()
+    elif experiment_type == 'CONTROL_LIGHT':
+        dict_items = _CONTROL_LIGHT.items()
+    elif experiment_type == 'CONTROL_AGO':
+        dict_items = _CONTROL_AGO.items()
+    elif experiment_type == 'RANDOM':
+        dict_items = _RANDOM.items()
+    elif experiment_type == 'NO_AUDIO':
+        dict_items = _NO_AUDIO.items()
+    elif experiment_type == 'DELAY':
+        dict_items = _DELAY.items()
+    else:
+        raise ValueError(
+            f'Could not find any controls for {experiment_type} '
+            f'try D1act, CONTROL, CONTROL_LIGHT, CONTROL_AGO, RANDOM, NO_AUDIO, DELAY')
+    ret = collections.defaultdict(list)
+    for mice_name, sessions_per_type in dict_items:
+        for day_index, session_path in enumerate(sessions_per_type):
+            [mice_name, session_date, day_init] = session_path.split('/')
+            ret['mice_name'].append(mice_name)
+            ret['session_date'].append(session_date)
+            ret['day_init'].append(day_init)
+            location_session = np.where(df_experiments["index"] == session_path)[0][0]
+            if day_init[-2:] == '-2':
+                ret['session_day'].append('2nd')
+                ret['previous_session'].append(df_experiments.iloc[location_session - 1].experiment_type)
+            elif day_init[-2:] == '-3':
+                ret['session_day'].append('3rd')
+                ret['previous_session'].append(df_experiments.iloc[location_session - 1].experiment_type)
+            elif day_init[-2:] == '-4':
+                ret['session_day'].append('4th')
+                ret['previous_session'].append(df_experiments.iloc[location_session - 1].experiment_type)
+            else:
+                ret['session_day'].append('1st')
+                ret['previous_session'].append('None')
+            ret['experiment_type'].append(experiment_type)
+            ret['session_path'].append(session_path)
+            ret['day_index'].append(day_index)
+
+            folder_process = Path(folder_list[find_folder_path(mice_name)]) / 'process'
+            dir_files = Path(folder_process) / session_path / 'simulation'
+            for file_name in os.listdir(dir_files):
+                if file_name[:17] == 'simulated_data_T1':
+                    ret['Sim_T1'].append(file_name)
+                elif file_name[:17] == 'simulated_data_T2':
+                    ret['Sim_T2'].append(file_name)
+                elif file_name[:10] == 'BMI_target':
+                    ret['BMI_target'].append(file_name)
+                elif file_name[:8] == 'strcMask':
+                    ret['mask_data'].append(file_name)
+                elif file_name[:10] == 'target_cal':
+                    ret['target_calibration'].append(file_name)
+    return pd.DataFrame(ret)
+
+
 def find_folder_path(target: str):
     """ Function to find to which hard drive each mice belongs to """
     for key, paths in _FOLDER_PATHS.items():
@@ -654,3 +713,10 @@ def get_sessions_parquet(folder_save: Path, folder_list: list):
     for experiment_type in AnalysisConstants.experiment_types:
         df = get_sessions_df(folder_list, experiment_type)
         df.to_parquet(folder_save / ("df_" + experiment_type + ".parquet"))
+
+
+def get_simulations_parquet(folder_save: Path, folder_list: list):
+    """ Function to get every type of experiment DF saved in parquet """
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = get_simulations_df(folder_list, experiment_type)
+        df.to_parquet(folder_save / ("df_" + experiment_type + "_simulations.parquet"))
