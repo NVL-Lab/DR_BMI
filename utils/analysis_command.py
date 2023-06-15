@@ -31,7 +31,7 @@ class AnalysisConfiguration:
     speed_smooth_factor: int = 31  # seconds to smooth motion
 
     # learning
-    learning_baseline: int = 5  # time in min to consider as "baseline" during BMI to obtain gain
+    learning_baseline: int = 7  # time in min to consider as "baseline" during BMI to obtain gain (5 + 2 to start BMI)
 
     # filtering background calcium signal
     filter_size: int = 500  # in frames
