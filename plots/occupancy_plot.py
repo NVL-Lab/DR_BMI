@@ -6,15 +6,33 @@ import numpy as np
 
 from pathlib import Path
 from utils import util_plots as ut_plots
+from utils.utils_analysis import geometric_mean, harmonic_mean
+from utils.analysis_constants import AnalysisConstants
+
+def plot_occupancy(df_occupancy, folder_plots: Path):
 
 
-def create_df_occupancy():
-    """ function that creates a df with all the data about occupancy of the neural cursor """
-    
-
-
-def plot_occupancy(folder_save: Path, folder_plots: Path):
     """ Function to plot occupancy and hits from simulated BMI """
+    basic_columns = ["mice", "session_date", "session_path", "experiment"]
+    occupancy_columns = [col for col in df_occupancy.columns if "occupancy" in col]
+    for experiment_type in AnalysisConstants.experiment_types:
+        df_subset = df_occupancy[basic_columns + occupancy_columns].copy()
+        df_subset = df_subset[df_subset.experiment == experiment_type]
+        df_fig1 = df_subset.melt(id_vars=basic_columns, var_name='occupancy', value_name='value')
+        fig1, ax1 = ut_plots.open_plot()
+        df_group = df_fig1.groupby(["mice", "occupancy"]).apply(harmonic_mean, 'value').reset_index()
+        sns.boxplot(data=df_group, x='occupancy', y='value', color='gray', ax=ax1)
+        ax1.set_ylim([0.15, 3])
+        ax1.set_xlabel(experiment_type)
+        a = df_group[df_group.experiment == 'D1act']['gain']
+        b = df_group[df_group.experiment == 'CONTROL']['gain']
+        ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
+        ut_plots.save_plot(fig1, ax1, folder_plots, 'control_basic', 'av_mice', False)
+
+
+
+
+
     df_occupancy = pd.read_parquet(Path(folder_save) / "df_occupancy.parquet")
     df_occupancy = df_occupancy[df_occupancy.did_simulation_worked]
     df_occupancy = df_occupancy.dropna()

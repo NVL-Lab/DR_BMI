@@ -8,6 +8,7 @@ import numpy as np
 from pathlib import Path
 from matplotlib import interactive
 
+from utils.utils_analysis import geometric_mean, harmonic_mean
 from utils import util_plots as ut_plots
 from utils.analysis_constants import AnalysisConstants
 
@@ -17,15 +18,30 @@ interactive(True)
 def plot_learning(df: pd.DataFrame, folder_plots: Path):
     """ function to plot learning stats """
     mice = df.mice.unique()
+    df = df.dropna()
+    df_control = df[df.experiment == "CONTROL"]
+    df_no_control = df[df.experiment != "CONTROL"]
 
-    average_control = df[df.experiment == "CONTROL"].gain.mean()
+    # remove the bad animals
+    average_control = harmonic_mean(df_control, 'gain').values[0][0]
+    df_group_control = df_control.groupby(["mice", "experiment"]).apply(harmonic_mean, "gain")
+    df_group = df.groupby(["mice", "experiment"]).apply(harmonic_mean, "gain").sort_values('experiment').reset_index()
+    df_group_d1act = df_group[df_group.experiment=='D1act']
+    deviations = df_group_control.gain - average_control
+    squared_deviations = deviations ** 2
+    mean_squared_deviations = np.mean(squared_deviations)
+    std_harmonic = np.sqrt(mean_squared_deviations)
+    bad_mice = df_group_d1act[df_group_d1act.gain < (std_harmonic + average_control)].mice.unique()
+    df_good = df_no_control[~df_no_control.mice.isin(bad_mice)]
+    df = pd.concat([df_good, df_control])
+
     fig0, ax0 = ut_plots.open_plot()
     experiments = ['D1act', 'CONTROL']
     df_fig0 = df[df.experiment.isin(experiments)]
-    df_group = df_fig0.groupby(["mice", "experiment"]).mean().sort_values('experiment').reset_index()
+    df_group = df_fig0.groupby(["mice", "experiment"]).apply(harmonic_mean, 'gain').sort_values('experiment').reset_index()
     order_fig0 = ['D1act', 'CONTROL']
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig0, ax=ax0)
-    ax0.set_ylim([0.15, 2.25])
+    ax0.set_ylim([0.15, 3])
     a = df_group[df_group.experiment == 'D1act']['gain']
     b = df_group[df_group.experiment == 'CONTROL']['gain']
     ut_plots.get_pvalues(a, b, ax0, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
@@ -34,13 +50,13 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     fig1, ax1 = ut_plots.open_plot()
     experiments = ['D1act', 'CONTROL_AGO', 'CONTROL_LIGHT']
     df_fig1 = df[df.experiment.isin(experiments)]
-    df_group = df_fig1.groupby(["mice", "experiment"]).mean().sort_values('experiment').reset_index()
+    df_group = df_fig1.groupby(["mice", "experiment"]).apply(harmonic_mean, 'gain').sort_values('experiment').reset_index()
     copper_palette = sns.color_palette("copper", n_colors=len(df_group.mice.unique()))
     order_fig1 = ['D1act', 'CONTROL_AGO', 'CONTROL_LIGHT']
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig1, ax=ax1)
     sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=order_fig1, palette=copper_palette, ax=ax1)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
-    ax1.set_ylim([0.15, 2.25])
+    ax1.set_ylim([0.15, 3])
     a = df_group[df_group.experiment == 'D1act']['gain']
     b = df_group[df_group.experiment == 'CONTROL_AGO']['gain']
     c = df_group[df_group.experiment == 'CONTROL_LIGHT']['gain']
@@ -52,13 +68,13 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     fig2, ax2 = ut_plots.open_plot()
     experiments = ['D1act', 'RANDOM', 'DELAY']
     df_fig2 = df[df.experiment.isin(experiments)]
-    df_group = df_fig2.groupby(["mice", "experiment"]).mean().sort_values('experiment').reset_index()
+    df_group = df_fig2.groupby(["mice", "experiment"]).apply(harmonic_mean, 'gain').sort_values('experiment').reset_index()
     copper_palette = sns.color_palette("copper", n_colors=len(df_group.mice.unique()))
     order_fig2 = ['D1act', 'DELAY', 'RANDOM']
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig2, ax=ax2)
     sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=order_fig2, palette=copper_palette, ax=ax2)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
-    ax2.set_ylim([0.15, 2.25])
+    ax2.set_ylim([0.15, 3])
     a = df_group[df_group.experiment == 'D1act']['gain']
     b = df_group[df_group.experiment == 'DELAY']['gain']
     c = df_group[df_group.experiment == 'RANDOM']['gain']
@@ -70,17 +86,61 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     fig3, ax3 = ut_plots.open_plot()
     experiments = ['D1act', 'NO_AUDIO']
     df_fig3 = df[df.experiment.isin(experiments)]
-    df_group = df_fig3.groupby(["mice", "experiment"]).mean().sort_values('experiment').reset_index()
+    df_group = df_fig3.groupby(["mice", "experiment"]).apply(harmonic_mean, 'gain').sort_values('experiment').reset_index()
     copper_palette = sns.color_palette("copper", n_colors=len(df_group.mice.unique()))
     order_fig3 = ['D1act', 'NO_AUDIO']
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig3, ax=ax3)
     sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=order_fig3, palette=copper_palette, ax=ax3)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
-    ax3.set_ylim([0.15, 2.25])
+    ax3.set_ylim([0.15, 3])
     a = df_group[df_group.experiment == 'D1act']['gain']
     b = df_group[df_group.experiment == 'NO_AUDIO']['gain']
     ut_plots.get_pvalues(a, b, ax3, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
     ut_plots.save_plot(fig3, ax3, folder_plots, 'feedback', 'av_mice', False)
+
+    # only same mice
+    fig4, ax4 = ut_plots.open_plot()
+    experiment = ['D1act', 'RANDOM', 'DELAY']
+    df_fig4 = df[df.experiment.isin(experiment)]
+    all_experiment = set(df_fig4['experiment'])
+    grouped = df_fig4.groupby('mice')['experiment'].nunique()
+    selected_mice = grouped[grouped == len(all_experiment)].index
+    # Select the entries in the 'mice' column that match the selected mice
+    sub_df = df_fig4[df_fig4['mice'].isin(selected_mice)]
+    df_group = sub_df.groupby(["mice", "experiment"]).apply(harmonic_mean, 'gain').sort_values('experiment').reset_index()
+    copper_palette = sns.color_palette("copper", n_colors=len(df_group.mice.unique()))
+    order_fig4 = ['D1act', 'DELAY', 'RANDOM']
+    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig4, ax=ax4)
+    sns.lineplot(data=df_group, x='experiment', y='gain', hue='mice', palette=copper_palette, ax=ax4)
+    plt.axhline(y=average_control, color='#990000', linestyle='--')
+    ax4.set_ylim([0.15, 3])
+    a = df_group[df_group.experiment == 'D1act']['gain']
+    b = df_group[df_group.experiment == 'DELAY']['gain']
+    c = df_group[df_group.experiment == 'RANDOM']['gain']
+    ut_plots.get_pvalues(a, b, ax4, pos=0.5, height=a[~np.isnan(a)].max())
+    ut_plots.get_pvalues(a, c, ax4, pos=1.5, height=a[~np.isnan(a)].max())
+    ut_plots.get_pvalues(b, c, ax4, pos=1.8, height=a[~np.isnan(a)].max())
+    ut_plots.save_plot(fig4, ax4, folder_plots, 'timing_same_mice', 'av_mice', False)
+
+    fig5, ax5 = ut_plots.open_plot()
+    experiment = ['D1act', 'NO_AUDIO']
+    df_fig5 = df[df.experiment.isin(experiment)]
+    all_experiment = set(df_fig3['experiment'])
+    grouped = df_fig5.groupby('mice')['experiment'].nunique()
+    selected_mice = grouped[grouped == len(all_experiment)].index
+    # Select the entries in the 'mice' column that match the selected mice
+    sub_df = df_fig5[df_fig5['mice'].isin(selected_mice)]
+    df_group = sub_df.groupby(["mice", "experiment"]).apply(harmonic_mean, 'gain').sort_values('experiment').reset_index()
+    copper_palette = sns.color_palette("copper", n_colors=len(df_group.mice.unique()))
+    order_fig5 = ['D1act', 'NO_AUDIO']
+    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig5, ax=ax5)
+    sns.lineplot(data=df_group, x='experiment', y='gain', hue='mice', palette=copper_palette, ax=ax5)
+    plt.axhline(y=average_control, color='#990000', linestyle='--')
+    ax5.set_ylim([0.15, 3])
+    a = df_group[df_group.experiment == 'D1act']['gain']
+    b = df_group[df_group.experiment == 'NO_AUDIO']['gain']
+    ut_plots.get_pvalues(a, b, ax5, pos=0.5, height=a[~np.isnan(a)].max())
+    ut_plots.save_plot(fig5, ax5, folder_plots, 'feedback_same_mice', 'av_mice', False)
 
     for mm, mouse in enumerate(mice):
         dfm = df[df.mice == mouse].sort_values('experiment').reset_index()
@@ -145,7 +205,8 @@ def plot_across_day_learning(df: pd.DataFrame, folder_plots: Path):
     ut_plots.save_plot(fig3, ax3, folder_plots, 'across_sessions', 'gain', False)
 
 
-def plot_extinction(df_ext: pd.DataFrame, folder_plots: Path):
+def plot_extinction(df_ext: pd.DataFrame, folder_plots: Path, bad_mice: list):
+    df_ext = df_ext[~df_ext.mice.isin(bad_mice)]
     df_fig = df_ext[["mice", "BMI_hpm", "ext_hpm", "ext2_hpm"]].copy()
     df_fig.replace("None", np.nan, inplace=True)
     df_fig.dropna()
@@ -165,7 +226,7 @@ def plot_extinction(df_ext: pd.DataFrame, folder_plots: Path):
     sns.lineplot(data=df_new, x="experiments", y="values", hue='mice', palette=copper_palette, ax=ax1)
     sns.stripplot(data=df_new, x='experiments', y='values', hue='mice', palette=copper_palette, jitter=False, s=10,
                   marker="D", ax=ax1)
-    ax1.set_ylim([0, 5.2])
+    ax1.set_ylim([0, 2.5])
     ut_plots.save_plot(fig1, ax1, folder_plots, 'extinction', 'gain', False)
 
 

@@ -16,7 +16,7 @@ def gain_self_stim(file_path: str) -> [float, float]:
         self_hits = bmi_online['data']['selfHits']
         end_bmi = bmi_online["data"]["frame"]
         init_bmi = np.where(trial_start == 1)[0][0]
-        baseline_time = int(AnalysisConstants.framerate * AnalysisConfiguration.learning_baseline * 60)
+        baseline_time = int(AnalysisConstants.framerate * AnalysisConfiguration.learning_baseline * 60) + init_bmi
         baseline_hits = self_hits[init_bmi:baseline_time].sum() / \
                         ((baseline_time - init_bmi)/AnalysisConstants.framerate / 60)
         BMI_time = len(self_hits[baseline_time:end_bmi])
