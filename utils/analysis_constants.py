@@ -37,6 +37,7 @@ class AnalysisConstants:
     framerate = 29.752  # framerate of acquisition of images
     calibration_frames = 27000  # number of frames during calibration
     dff_win = 10  # number of frames to smooth dff
+    len_calibration = 15  # length calibration in minutes
     experiment_types = ['D1act',
                         'CONTROL', 'CONTROL_LIGHT', 'CONTROL_AGO',
                         'RANDOM', 'NO_AUDIO', 'DELAY']

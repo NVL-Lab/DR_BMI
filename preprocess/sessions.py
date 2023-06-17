@@ -26,53 +26,38 @@ _D1act = {
     'm13': [
         'm13/221113/D02',
         'm13/221114/D03',
-        'm13/221115/D04-2',
         'm13/221116/D05',
     ],
     'm15': [
         'm15/221113/D02',
         'm15/221114/D03',
-        'm15/221115/D04-2',
         'm15/221116/D05',
-        'm15/221117/D06-2',
         'm15/221119/D08',
-        'm15/221119/D08-2',
     ],
     'm16': [
         'm16/221113/D02',
         'm16/221114/D03',
         'm16/221116/D05',
         'm16/221118/D07',
-        'm16/221118/D07-2',
         'm16/221119/D08',
-        'm16/221119/D08-2',
     ],
     'm18': [
         'm18/221113/D02',
         'm18/221114/D03',
         'm18/221116/D05',
-        'm18/221117/D06-2',
         'm18/221118/D07',
-        'm18/221118/D07-2',
-        'm18/221118/D07-3',
     ],
     'm21': [
         'm21/230414/D06',
-        'm21/230414/D06-2',
         'm21/230415/D07',
-        'm21/230415/D07-2',
         'm21/230416/D08',
-        'm21/230416/D08-2',
         'm21/230417/D09',
         'm21/230418/D10'
     ],
     'm22': [
         'm22/230414/D03',
-        'm22/230414/D03-2',
         'm22/230415/D04',
-        'm22/230415/D04-2',
         'm22/230416/D05',
-        'm22/230416/D05-2',
         'm22/230417/D06',
         'm22/230418/D07',
         'm22/230419/D08'
@@ -80,94 +65,76 @@ _D1act = {
     'm23': [
         'm23/230419/D02',
         'm23/230420/D03',
-        'm23/230420/D03-2',
-        'm23/230420/D03-3',
         'm23/230421/D04',
-        'm23/230421/D04-2',
         'm23/230422/D05'
+    ],
+    'm25': [
+        'm25/230414/D06',
+        'm25/230415/D07',
+        'm25/230416/D08',
+        'm25/230417/D09'
     ],
     'm26': [
         'm26/230414/D06',
-        'm26/230414/D06-2',
         'm26/230415/D07',
-        'm26/230415/D07-2',
         'm26/230416/D08',
         'm26/230417/D09',
-        'm26/230417/D09-2'
+    ],
+    'm27': [
+        'm27/230414/D02',
+        'm27/230415/D03'
     ],
     'm28': [
         'm28/230414/D06',
-        'm28/230414/D06-2',
         'm28/230415/D07',
-        'm28/230415/D07-2',
         'm28/230416/D08',
-        'm28/230416/D08-2',
-        'm28/230416/D08-3',
         'm28/230417/D09'
     ],
     'm29': [
         'm29/230419/D02',
-        'm29/230419/D02-2',
         'm29/230420/D03',
-        'm29/230420/D03-2',
-        'm29/230420/D03-3',
         'm29/230421/D04',
-        'm29/230421/D04-2'
     ]
 }
 
 _RANDOM = {
-    'm13': [
-        'm13/221115/D04'
-    ],
     'm15': [
         'm15/221115/D04',
-        'm15/221116/D05-2',
         'm15/221117/D06',
         'm15/221118/D07',
-        'm15/221118/D07-3',
     ],
     'm16': [
         'm16/221115/D04',
-        'm16/221116/D05-2',
         'm16/221117/D06',
-        'm16/221117/D06-2',
-        'm16/221119/D08-3',
     ],
     'm18': [
         'm18/221115/D04',
-        'm18/221116/D05-2',
         'm18/221117/D06',
         'm18/221119/D08',
-        'm18/221119/D08-2',
     ],
     'm21': [
         'm21/230412/D04',
         'm21/230413/D05',
-        'm21/230413/D05-2',
-        'm21/230413/D05-3'
     ],
     'm22': [
         'm22/230413/D02',
-        'm22/230413/D02-2',
-        'm22/230424/D12-2'
     ],
     'm23': [
         'm23/230423/D06',
         'm23/230424/D07',
-        'm23/230424/D07-2',
-        'm23/230424/D07-3'
+    ],
+    'm25': [
+        'm25/230412/D04',
+        'm25/230413/D05',
+    ],
+    'm26': [
+        'm26/230412/D04',
+        'm26/230413/D05',
     ],
     'm28': [
         'm28/230412/D04',
         'm28/230413/D05',
         'm28/230421/D13'
-    ],
-    'm29': [
-        'm29/230418/D01-2',
-        'm29/230418/D01-3',
-        'm29/230419/D02-3',
-        'm29/230419/D02-4'
     ]
 }
 
@@ -187,14 +154,17 @@ _CONTROL_LIGHT = {
     'm21': [
         'm21/230406/D01'
     ],
-    'm22': [
-        'm22/230412/D01'
-    ],
     'm23': [
         'm23/230418/D01'
     ],
+    'm25': [
+        'm25/230406/D01'
+    ],
     'm26': [
         'm26/230406/D01'
+    ],
+    'm27': [
+        'm27/230406/D01'
     ],
     'm28': [
         'm28/230406/D01'
@@ -208,29 +178,20 @@ _CONTROL_AGO = {
     'm13': [
         'm13/221117/D06'
     ],
-    'm15': [
-        'm15/221118/D07-2'
-    ],
-    'm16': [
-        'm16/221115/D04-2'
-    ],
-    'm18': [
-        'm18/221116/D05-3'
-    ],
     'm21': [
-        'm21/230421/D13-3'
+        'm21/230422/D14'
     ],
     'm22': [
         'm22/230422/D10'
     ],
-    'm23': [
-        'm23/230422/D05-2'
+    'm25': [
+        'm25/230418/D10'
     ],
     'm26': [
         'm26/230418/D10'
     ],
     'm28': [
-        'm28/230421/D13-2'
+        'm28/230422/D14'
     ],
     'm29': [
         'm29/230422/D05'
@@ -240,27 +201,25 @@ _CONTROL_AGO = {
 _NO_AUDIO = {
     'm21': [
         'm21/230407/D02',
-        'm21/230408/D03',
-        'm21/230421/D13-2'
+        'm21/230408/D03'
     ],
     'm22': [
-        'm22/230422/D10-2',
         'm22/230423/D11',
         'm22/230424/D12'
     ],
-    'm23': [
-        'm23/230419/D02-2',
-        'm23/230419/D02-3',
-        'm23/230422/D05-3'
+    'm25': [
+        'm25/230407/D02',
+        'm25/230408/D03',
+    ],
+    'm26': [
+        'm26/230407/D02',
+        'm26/230408/D03',
     ],
     'm28': [
         'm28/230407/D02',
         'm28/230408/D03',
-        'm28/230408/D03-2'
     ],
     'm29': [
-        'm29/230422/D05-2',
-        'm29/230422/D05-3',
         'm29/230424/D07'
     ]
 }
@@ -273,13 +232,6 @@ _DELAY = {
     ],
     'm22': [
         'm22/230420/D09',
-        'm22/230423/D11-2',
-        'm22/230423/D11-3'
-    ],
-    'm23': [
-        'm23/230423/D06-2',
-        'm23/230423/D06-3',
-        'm23/230423/D06-4'
     ],
     'm28': [
         'm28/230418/D10',
@@ -287,9 +239,7 @@ _DELAY = {
         'm28/230420/D12'
     ],
     'm29': [
-        'm29/230423/D06',
-        'm29/230423/D06-2',
-        'm29/230423/D06-3'
+        'm29/230423/D06'
     ]
 }
 
@@ -314,22 +264,15 @@ _EXTINCTION = {
 _CONTROL = {
     'm25': [
         'm25/230425/D11',
-        'm25/230425/D11-2',
-        'm25/230425/D11-3'
     ],
     'm26': [
         'm26/230425/D11',
-        'm26/230425/D11-2',
-        'm26/230425/D11-3'
     ],
     'm27': [
         'm27/230424/D02',
-        'm27/230424/D02-2',
-        'm27/230424/D02-3'
     ],
     'm28': [
         'm28/230424/D14',
-        'm28/230424/D14-2',
         'm28/230425/D15'
     ],
     'm29': [
@@ -359,8 +302,7 @@ _BEHAVIOR = {
         'm22/230419/D08'
     ],
     'm23': [
-        'm23/230419/D02',
-        'm23/230422/D05-3'
+        'm23/230419/D02'
     ],
     'm25': [
         'm25/230407/D02',
@@ -404,8 +346,7 @@ _MOTOR_beh_before_BMI = {
         'm22/230419/D08'
     ],
     'm23': [
-        'm23/230419/D02',
-        'm23/230422/D05-3'
+        'm23/230419/D02'
     ],
     'm25': [
         'm25/230407/D02',
@@ -613,7 +554,7 @@ def get_extinction(folder_list: list) -> pd.DataFrame:
     for mice_name, sessions_per_type in dict_items:
         for day_index, session_path in enumerate(sessions_per_type):
             [mice_name, session_date, day_init] = session_path.split('/')
-            ret['mice_name'].append(mice_name)
+            ret['mice'].append(mice_name)
             ret['session_date'].append(session_date)
             ret['day_init'].append(day_init)
             ret['session_path'].append(session_path)
@@ -641,6 +582,68 @@ def get_extinction(folder_list: list) -> pd.DataFrame:
     return pd.DataFrame(ret)
 
 
+def get_simulations_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
+    """ Function to retrieve the name of the simulations that will be used depending on the experiment type
+    and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
+    df_experiments = get_all_sessions()
+    if experiment_type == 'D1act':
+        dict_items = _D1act.items()
+    elif experiment_type == 'CONTROL':
+        dict_items = _CONTROL.items()
+    elif experiment_type == 'CONTROL_LIGHT':
+        dict_items = _CONTROL_LIGHT.items()
+    elif experiment_type == 'CONTROL_AGO':
+        dict_items = _CONTROL_AGO.items()
+    elif experiment_type == 'RANDOM':
+        dict_items = _RANDOM.items()
+    elif experiment_type == 'NO_AUDIO':
+        dict_items = _NO_AUDIO.items()
+    elif experiment_type == 'DELAY':
+        dict_items = _DELAY.items()
+    else:
+        raise ValueError(
+            f'Could not find any controls for {experiment_type} '
+            f'try D1act, CONTROL, CONTROL_LIGHT, CONTROL_AGO, RANDOM, NO_AUDIO, DELAY')
+    ret = collections.defaultdict(list)
+    for mice_name, sessions_per_type in dict_items:
+        for day_index, session_path in enumerate(sessions_per_type):
+            [mice_name, session_date, day_init] = session_path.split('/')
+            ret['mice_name'].append(mice_name)
+            ret['session_date'].append(session_date)
+            ret['day_init'].append(day_init)
+            location_session = np.where(df_experiments["index"] == session_path)[0][0]
+            if day_init[-2:] == '-2':
+                ret['session_day'].append('2nd')
+                ret['previous_session'].append(df_experiments.iloc[location_session - 1].experiment_type)
+            elif day_init[-2:] == '-3':
+                ret['session_day'].append('3rd')
+                ret['previous_session'].append(df_experiments.iloc[location_session - 1].experiment_type)
+            elif day_init[-2:] == '-4':
+                ret['session_day'].append('4th')
+                ret['previous_session'].append(df_experiments.iloc[location_session - 1].experiment_type)
+            else:
+                ret['session_day'].append('1st')
+                ret['previous_session'].append('None')
+            ret['experiment_type'].append(experiment_type)
+            ret['session_path'].append(session_path)
+            ret['day_index'].append(day_index)
+
+            folder_process = Path(folder_list[find_folder_path(mice_name)]) / 'process'
+            dir_files = Path(folder_process) / session_path / 'simulation'
+            for file_name in os.listdir(dir_files):
+                if file_name[:17] == 'simulated_data_T1':
+                    ret['Sim_T1'].append(file_name)
+                elif file_name[:17] == 'simulated_data_T2':
+                    ret['Sim_T2'].append(file_name)
+                elif file_name[:10] == 'BMI_target':
+                    ret['BMI_target'].append(file_name)
+                elif file_name[:8] == 'strcMask':
+                    ret['mask_data'].append(file_name)
+                elif file_name[:10] == 'target_cal':
+                    ret['target_calibration'].append(file_name)
+    return pd.DataFrame(ret)
+
+
 def find_folder_path(target: str):
     """ Function to find to which hard drive each mice belongs to """
     for key, paths in _FOLDER_PATHS.items():
@@ -654,3 +657,10 @@ def get_sessions_parquet(folder_save: Path, folder_list: list):
     for experiment_type in AnalysisConstants.experiment_types:
         df = get_sessions_df(folder_list, experiment_type)
         df.to_parquet(folder_save / ("df_" + experiment_type + ".parquet"))
+
+
+def get_simulations_parquet(folder_save: Path, folder_list: list):
+    """ Function to get every type of experiment DF saved in parquet """
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = get_simulations_df(folder_list, experiment_type)
+        df.to_parquet(folder_save / ("df_" + experiment_type + "_simulations.parquet"))
