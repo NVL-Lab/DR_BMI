@@ -2,12 +2,15 @@ __author__ = 'Nuria'
 
 
 import collections
-import pandas as pd
+from typing import Tuple
 
+import pandas as pd
+import numpy as np
 from pathlib import Path
 
 from preprocess import sessions as ss
 from utils.analysis_constants import AnalysisConstants
+from utils.utils_analysis import harmonic_mean
 from analysis import learning_analysis
 
 
@@ -60,3 +63,21 @@ def obtain_extinction(folder_list: list) -> pd.DataFrame:
                 ret['ext2_gain'].append(ext2_gain)
                 ret['ext2_hpm'].append(ext2_hits)
     return pd.DataFrame(ret)
+
+
+def get_bad_mice(df: pd.DataFrame) -> Tuple[np.array, float]:
+    """ function to obtain the bad mice given the df learning """
+    df = df.dropna()
+    df_control = df[df.experiment == "CONTROL"]
+
+    # remove the bad animals
+    average_control = harmonic_mean(df_control, 'gain').values[0][0]
+    df_group_control = df_control.groupby(["mice", "experiment"]).apply(harmonic_mean, 'gain')
+    df_group = df.groupby(["mice", "experiment"]).apply(harmonic_mean, 'gain').sort_values('experiment').reset_index()
+    df_group_d1act = df_group[df_group.experiment == 'D1act']
+    deviations = df_group_control.gain - average_control
+    squared_deviations = deviations ** 2
+    mean_squared_deviations = np.mean(squared_deviations)
+    std_harmonic = np.sqrt(mean_squared_deviations)
+    bad_mice = df_group_d1act[df_group_d1act.gain < (std_harmonic + average_control)].mice.unique()
+    return bad_mice, average_control

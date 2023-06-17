@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -26,3 +26,13 @@ def harmonic_mean(df: pd.DataFrame, column: str) -> pd.DataFrame:
     df_out = pd.DataFrame()
     df_out[column] = pd.Series(hmean(df[column]))
     return df_out
+
+
+def remove_bad_mice(df: pd.DataFrame, bad_mice: list) -> pd.DataFrame:
+    """ function to remove bad mice from dataframe"""
+    df_control = df[df.experiment == "CONTROL"]
+    df_no_control = df[~(df.experiment == "CONTROL")]
+    df_good = df_no_control[~df_no_control.mice.isin(bad_mice)]
+    df = pd.concat([df_good, df_control])
+    return df
+

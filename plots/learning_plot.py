@@ -8,32 +8,18 @@ import numpy as np
 from pathlib import Path
 from matplotlib import interactive
 
-from utils.utils_analysis import geometric_mean, harmonic_mean
+from utils.utils_analysis import harmonic_mean, remove_bad_mice
 from utils import util_plots as ut_plots
 from utils.analysis_constants import AnalysisConstants
+from analysis.learning_population import get_bad_mice
 
 interactive(True)
 
 
 def plot_learning(df: pd.DataFrame, folder_plots: Path):
     """ function to plot learning stats """
-    mice = df.mice.unique()
-    df = df.dropna()
-    df_control = df[df.experiment == "CONTROL"]
-    df_no_control = df[df.experiment != "CONTROL"]
-
-    # remove the bad animals
-    average_control = harmonic_mean(df_control, 'gain').values[0][0]
-    df_group_control = df_control.groupby(["mice", "experiment"]).apply(harmonic_mean, "gain")
-    df_group = df.groupby(["mice", "experiment"]).apply(harmonic_mean, "gain").sort_values('experiment').reset_index()
-    df_group_d1act = df_group[df_group.experiment=='D1act']
-    deviations = df_group_control.gain - average_control
-    squared_deviations = deviations ** 2
-    mean_squared_deviations = np.mean(squared_deviations)
-    std_harmonic = np.sqrt(mean_squared_deviations)
-    bad_mice = df_group_d1act[df_group_d1act.gain < (std_harmonic + average_control)].mice.unique()
-    df_good = df_no_control[~df_no_control.mice.isin(bad_mice)]
-    df = pd.concat([df_good, df_control])
+    bad_mice, average_control = get_bad_mice(df)
+    df = remove_bad_mice(df, bad_mice)
 
     fig0, ax0 = ut_plots.open_plot()
     experiments = ['D1act', 'CONTROL']
