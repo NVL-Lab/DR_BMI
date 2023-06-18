@@ -29,9 +29,8 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     experiments = ['D1act', 'CONTROL']
     df_fig0 = df[df.experiment.isin(experiments)]
     df_group = df_fig0.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').sort_values('experiment').reset_index()
-    order_fig0 = ['D1act', 'CONTROL']
-    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig0, ax=ax0)
-    sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=order_fig0, palette=color_mapping, ax=ax0)
+    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiments, ax=ax0)
+    sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=experiments, palette=color_mapping, ax=ax0)
     ax0.set_ylim([0.15, 3])
     a = df_group[df_group.experiment == 'D1act']['gain']
     b = df_group[df_group.experiment == 'CONTROL']['gain']
@@ -41,10 +40,9 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     fig1, ax1 = ut_plots.open_plot()
     experiments = ['D1act', 'CONTROL_AGO', 'CONTROL_LIGHT']
     df_fig1 = df[df.experiment.isin(experiments)]
-    df_group = df_fig1.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').sort_values('experiment').reset_index()
-    order_fig1 = ['D1act', 'CONTROL_AGO', 'CONTROL_LIGHT']
-    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig1, ax=ax1)
-    sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=order_fig1, palette=color_mapping, ax=ax1)
+    df_group = df_fig1.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiments, ax=ax1)
+    sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=experiments, palette=color_mapping, ax=ax1)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
     ax1.set_ylim([0.15, 3])
     a = df_group[df_group.experiment == 'D1act']['gain']
@@ -56,12 +54,11 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     ut_plots.save_plot(fig1, ax1, folder_plots, 'controls', 'av_mice', False)
 
     fig2, ax2 = ut_plots.open_plot()
-    experiments = ['D1act', 'RANDOM', 'DELAY']
+    experiments = ['D1act', 'DELAY', 'RANDOM']
     df_fig2 = df[df.experiment.isin(experiments)]
-    df_group = df_fig2.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').sort_values('experiment').reset_index()
-    order_fig2 = ['D1act', 'DELAY', 'RANDOM']
-    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig2, ax=ax2)
-    sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=order_fig2, palette=color_mapping, ax=ax2)
+    df_group = df_fig2.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiments, ax=ax2)
+    sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=experiments, palette=color_mapping, ax=ax2)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
     ax2.set_ylim([0.15, 3])
     a = df_group[df_group.experiment == 'D1act']['gain']
@@ -75,10 +72,9 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     fig3, ax3 = ut_plots.open_plot()
     experiments = ['D1act', 'NO_AUDIO']
     df_fig3 = df[df.experiment.isin(experiments)]
-    df_group = df_fig3.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').sort_values('experiment').reset_index()
-    order_fig3 = ['D1act', 'NO_AUDIO']
-    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig3, ax=ax3)
-    sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=order_fig3, palette=color_mapping, ax=ax3)
+    df_group = df_fig3.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiments, ax=ax3)
+    sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=experiments, palette=color_mapping, ax=ax3)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
     ax3.set_ylim([0.15, 3])
     a = df_group[df_group.experiment == 'D1act']['gain']
@@ -87,6 +83,28 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     ut_plots.save_plot(fig3, ax3, folder_plots, 'feedback', 'av_mice', False)
 
     # only same mice
+    fig6, ax6 = ut_plots.open_plot()
+    experiment = ['D1act', 'CONTROL_AGO', 'CONTROL_LIGHT']
+    df_fig6 = df[df.experiment.isin(experiment)]
+    all_experiment = set(df_fig6['experiment'])
+    grouped = df_fig6.groupby('mice')['experiment'].nunique()
+    selected_mice = grouped[grouped == len(all_experiment)].index
+    # Select the entries in the 'mice' column that match the selected mice
+    sub_df = df_fig6[df_fig6['mice'].isin(selected_mice)]
+    df_group = sub_df.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    df_group = df_group.sort_values(by='experiment', key=lambda x: x.map({value: i for i, value in enumerate(experiment)}))
+    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiment, ax=ax6)
+    sns.lineplot(data=df_group, x='experiment', y='gain', hue='mice', palette=color_mapping, ax=ax6)
+    plt.axhline(y=average_control, color='#990000', linestyle='--')
+    ax6.set_ylim([0.15, 3])
+    a = df_group[df_group.experiment == 'D1act']['gain']
+    b = df_group[df_group.experiment == 'CONTROL_AGO']['gain']
+    c = df_group[df_group.experiment == 'CONTROL_LIGHT']['gain']
+    ut_plots.get_pvalues(a, b, ax6, pos=0.5, height=a[~np.isnan(a)].max())
+    ut_plots.get_pvalues(a, c, ax6, pos=1.5, height=a[~np.isnan(a)].max())
+    ut_plots.get_pvalues(b, c, ax6, pos=1.8, height=a[~np.isnan(a)].max())
+    ut_plots.save_plot(fig6, ax6, folder_plots, 'control_same_mice', 'av_mice', False)
+
     fig4, ax4 = ut_plots.open_plot()
     experiment = ['D1act', 'RANDOM', 'DELAY']
     df_fig4 = df[df.experiment.isin(experiment)]
@@ -95,7 +113,7 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     selected_mice = grouped[grouped == len(all_experiment)].index
     # Select the entries in the 'mice' column that match the selected mice
     sub_df = df_fig4[df_fig4['mice'].isin(selected_mice)]
-    df_group = sub_df.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').sort_values('experiment').reset_index()
+    df_group = sub_df.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
     order_fig4 = ['D1act', 'DELAY', 'RANDOM']
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig4, ax=ax4)
     sns.lineplot(data=df_group, x='experiment', y='gain', hue='mice', palette=color_mapping, ax=ax4)
@@ -117,7 +135,7 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     selected_mice = grouped[grouped == len(all_experiment)].index
     # Select the entries in the 'mice' column that match the selected mice
     sub_df = df_fig5[df_fig5['mice'].isin(selected_mice)]
-    df_group = sub_df.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').sort_values('experiment').reset_index()
+    df_group = sub_df.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
     order_fig5 = ['D1act', 'NO_AUDIO']
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig5, ax=ax5)
     sns.lineplot(data=df_group, x='experiment', y='gain', hue='mice', palette=color_mapping, ax=ax5)

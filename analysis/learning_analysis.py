@@ -8,7 +8,7 @@ from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 
 
-def gain_self_stim(file_path: str) -> [float, float, float]:
+def gain_self_stim(file_path: str, time_or_hit: str = 'time') -> [float, float, float]:
     """ Function to obtain the gain in self DR stim """
     bmi_online = sio.loadmat(file_path, simplify_cells=True)
     trial_start = bmi_online['data']['trialStart']
@@ -16,17 +16,26 @@ def gain_self_stim(file_path: str) -> [float, float, float]:
         self_hits = bmi_online['data']['selfHits']
         end_bmi = bmi_online["data"]["frame"]
         init_bmi = np.where(trial_start == 1)[0][0]
-        baseline_time = int(AnalysisConstants.framerate * AnalysisConfiguration.learning_baseline * 60) + init_bmi
+        if time_or_hit == 'time':
+            baseline_time = int(AnalysisConstants.framerate * AnalysisConfiguration.learning_baseline * 60) + init_bmi
+        elif time_or_hit == 'hit':
+            if np.nansum(self_hits) > AnalysisConfiguration.learning_baseline_hits:
+                baseline_time = np.where(self_hits)[0][AnalysisConfiguration.learning_baseline_hits - 1]
+            else:
+                baseline_time = end_bmi
+        else:
+            raise ValueError('time_or_hit can only be as the name explains the str: time or hit')
         baseline_hits = self_hits[init_bmi:baseline_time].sum() / \
                         ((baseline_time - init_bmi)/AnalysisConstants.framerate / 60)
         BMI_time = len(self_hits[baseline_time:end_bmi])
-        BMI_hits = self_hits[baseline_time:end_bmi].sum() / (BMI_time / AnalysisConstants.framerate / 60)
-        if baseline_hits == 0:
+        if baseline_hits == 0 or BMI_time == 0:
             BMI_gain = np.nan
+            BMI_hits = np.nan
         else:
+            BMI_hits = self_hits[baseline_time:end_bmi].sum() / (BMI_time / AnalysisConstants.framerate / 60)
             BMI_gain = BMI_hits / baseline_hits
     else:
-        BMI_hits = 0
-        BMI_gain = 1
+        baseline_hits = np.nan
+        BMI_hits = np.nan
+        BMI_gain = np.nan
     return BMI_hits, BMI_gain, baseline_hits
-
