@@ -69,3 +69,24 @@ def obtain_motion_behav_data(folder_list: list, speed_min=AnalysisConfiguration.
                         ret[key].append(motor_features[key])
     return pd.DataFrame(ret)
 
+
+def create_df_motion():
+    df_aux1 = pd.read_parquet("C:/Users/Nuria/Documents/DATA/D1exp/df_data/motion_behavior.parquet")
+    df_aux2 = pd.read_parquet("C:/Users/Nuria/Documents/DATA/D1exp/df_data/motion_data.parquet")
+
+    df_control = df_aux2[df_aux2.BB == "BMI"]
+    df_control = df_control.drop(columns="BB")
+
+    df_aux1["Laser"] = "ON"
+    df_aux1 = df_aux1[df_aux1["experiment"] == "Behavior_before"]
+    df_aux1 = df_aux1.drop(columns="experiment")
+
+    df_aux2["Laser"] = "OFF"
+    df_aux2.loc[df_aux2.BB == "BMI", "Laser"] = "BMI"
+    df_aux2 = df_aux2.drop(columns="BB")
+    df_aux2 = df_aux2[df_aux2.experiment.isin(['D1act', 'RANDOM', 'NO_AUDIO', 'DELAY'])]
+    df_aux2 = df_aux2.drop(columns="experiment")
+    df_motion = pd.concat((df_aux1, df_aux2))
+
+    df_control.to_parquet("C:/Users/Nuria/Documents/DATA/D1exp/df_data/df_motion_controls.parquet")
+    df_motion.to_parquet("C:/Users/Nuria/Documents/DATA/D1exp/df_data/df_motion.parquet")

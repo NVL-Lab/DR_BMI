@@ -551,16 +551,16 @@ def get_extinction(folder_list: list) -> pd.DataFrame:
     and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
     dict_items = _EXTINCTION.items()
     ret = collections.defaultdict(list)
-    for mice_name, sessions_per_type in dict_items:
+    for mice, sessions_per_type in dict_items:
         for day_index, session_path in enumerate(sessions_per_type):
-            [mice_name, session_date, day_init] = session_path.split('/')
-            ret['mice'].append(mice_name)
+            [mice, session_date, day_init] = session_path.split('/')
+            ret['mice'].append(mice)
             ret['session_date'].append(session_date)
             ret['day_init'].append(day_init)
             ret['session_path'].append(session_path)
             flag_extinction = False
             flag_extinction_2 = False
-            folder_raw = Path(folder_list[find_folder_path(mice_name)]) / 'raw'
+            folder_raw = Path(folder_list[find_folder_path(mice)]) / 'raw'
             dir_files = Path(folder_raw) / session_path
             for file_name in os.listdir(dir_files):
                 if file_name[:10] == 'BaselineOn':

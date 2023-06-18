@@ -4,8 +4,11 @@ from typing import Optional
 import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
+import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy import stats
+
+from utils.analysis_constants import AnalysisConstants
 
 
 def open_plot(sizes: tuple = [8, 6]):
@@ -93,3 +96,9 @@ def calc_pvalue(p_value: float) -> str:
     else:
         p = 'ns'
     return p
+
+
+def generate_palette_all_figures(mice: np.array = AnalysisConstants.mice, palette: str = 'copper') -> dict:
+    """ function to generate palette for all mice for all figures """
+    custom_palette = sns.color_palette(palette, n_colors=len(mice))
+    return {mouse: color for mouse, color in zip(mice, custom_palette)}

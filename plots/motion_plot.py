@@ -8,6 +8,8 @@ from pathlib import Path
 from matplotlib import interactive
 
 from utils import util_plots as ut_plots
+from utils.utils_analysis import geometric_mean
+
 interactive(True)
 
 
@@ -16,9 +18,9 @@ def plot_movement_features(df_motion: pd.DataFrame, folder_plots: Path):
 
     mice = df_motion.mice.unique()
     copper_palette = sns.color_palette("copper", n_colors=len(mice))
+    df_group = df_motion.groupby(["mice", "Laser"]).mean().reset_index()
+    order_fig = ['ON', 'OFF', 'BMI']
     for feature in df_motion.columns[4:len(df_motion.columns) - 1]:
-        df_group = df_motion.groupby(["mice", "Laser"]).mean().reset_index()
-        order_fig = ['ON', 'OFF', 'BMI']
         fig1, ax1 = ut_plots.open_plot()
         sns.boxplot(data=df_group, x='Laser', y=feature, color='gray', order=order_fig, ax=ax1)
         sns.stripplot(data=df_group, x="Laser", y=feature, hue='mice', order=order_fig, palette=copper_palette, ax=ax1)

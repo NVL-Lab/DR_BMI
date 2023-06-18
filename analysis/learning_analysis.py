@@ -8,7 +8,7 @@ from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 
 
-def gain_self_stim(file_path: str) -> [float, float]:
+def gain_self_stim(file_path: str) -> [float, float, float]:
     """ Function to obtain the gain in self DR stim """
     bmi_online = sio.loadmat(file_path, simplify_cells=True)
     trial_start = bmi_online['data']['trialStart']
@@ -28,5 +28,5 @@ def gain_self_stim(file_path: str) -> [float, float]:
     else:
         BMI_hits = 0
         BMI_gain = 1
-    return BMI_hits, BMI_gain
+    return BMI_hits, BMI_gain, baseline_hits
 

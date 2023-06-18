@@ -46,3 +46,4 @@ class AnalysisConstants:
     height_stim_artifact = 3  # height of the stim artifact in std
     # preprocess
     fast_disk = 'C:/Users/Nuria/Documents/DATA'
+    mice = ['m13', 'm15', 'm16', 'm18', 'm21', 'm22', 'm23', 'm25', 'm26', 'm27', 'm28', 'm29']

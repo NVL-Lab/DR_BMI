@@ -27,7 +27,7 @@ class AnalysisConfiguration:
     hist_bins_default = 100  # number of bins by default to use on histograms
 
     # movement
-    run_speed_min: float = 10.  # minimum speed to consider boats of running
+    run_speed_min: float = 5.  # minimum speed to consider boats of running
     speed_smooth_factor: int = 31  # seconds to smooth motion
 
     # learning
