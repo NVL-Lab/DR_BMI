@@ -32,6 +32,7 @@ class AnalysisConfiguration:
 
     # learning
     learning_baseline: int = 5  # time in min to consider as "baseline" during BMI to obtain gain
+    learning_baseline_hits: int = 5  # number of hits to consider "baseline time"
 
     # filtering background calcium signal
     filter_size: int = 500  # in frames

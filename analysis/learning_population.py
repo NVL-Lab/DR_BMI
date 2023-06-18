@@ -14,7 +14,7 @@ from utils.utils_analysis import harmonic_mean, geometric_mean
 from analysis import learning_analysis
 
 
-def obtain_gain(folder_list: list) -> pd.DataFrame:
+def obtain_gain(folder_list: list, time_or_hit: str = 'time') -> pd.DataFrame:
     """ function to obtain gain for all experiments """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.experiment_types:
@@ -31,7 +31,7 @@ def obtain_gain(folder_list: list) -> pd.DataFrame:
                 ret['previous_session'].append(row['previous_session'])
                 ret['day_index'].append(row['day_index'])
                 ret['experiment'].append(experiment_type)
-                bmi_hits, bmi_gain, _ = learning_analysis.gain_self_stim(folder_path / row['BMI_online'])
+                bmi_hits, bmi_gain, _ = learning_analysis.gain_self_stim(folder_path / row['BMI_online'], time_or_hit)
                 ret['gain'].append(bmi_gain)
                 ret['hits_per_min'].append(bmi_hits)
     return pd.DataFrame(ret)
