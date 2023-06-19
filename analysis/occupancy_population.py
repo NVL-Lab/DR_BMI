@@ -11,7 +11,7 @@ from utils.analysis_constants import AnalysisConstants
 from analysis.occupancy_analysis import obtain_occupancy
 
 
-def obtain_occupancy_data(folder_list: list) -> pd.DataFrame:
+def obtain_occupancy_data(folder_list: list, time_or_hit: str = 'time') -> pd.DataFrame:
     """ function to obtain the occupancy data from mat files """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.experiment_types:
@@ -33,8 +33,10 @@ def obtain_occupancy_data(folder_list: list) -> pd.DataFrame:
 
             mat_T1 = sio.loadmat(folder_raw_experiment / session_row['target_calibration'], simplify_cells=True)
             mat_T2 = sio.loadmat(folder_process_experiment / row['target_calibration'], simplify_cells=True)
-            occupancy_T1 = obtain_occupancy(sio.loadmat(folder_process_experiment / row['Sim_T1'], simplify_cells=True))
-            occupancy_T2 = obtain_occupancy(sio.loadmat(folder_process_experiment / row['Sim_T2'], simplify_cells=True))
+            occupancy_T1 = obtain_occupancy(sio.loadmat(folder_process_experiment / row['Sim_T1'], simplify_cells=True),
+                                            time_or_hit)
+            occupancy_T2 = obtain_occupancy(sio.loadmat(folder_process_experiment / row['Sim_T2'], simplify_cells=True),
+                                            time_or_hit)
 
             ret['cal_T1_occupancy'].append(mat_T1['num_hits_no_b2base']/AnalysisConstants.len_calibration)
             ret['cal_T1_hits'].append(mat_T1['num_valid_hits']/AnalysisConstants.len_calibration)
