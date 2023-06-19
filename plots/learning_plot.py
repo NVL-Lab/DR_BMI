@@ -23,6 +23,7 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     mice = df.mice.unique()
     good_mice = np.setdiff1d(mice, bad_mice)
     df = remove_bad_mice(df, bad_mice)
+    df = df.dropna()
     color_mapping = generate_palette_all_figures()
 
     fig0, ax0 = ut_plots.open_plot()
@@ -154,6 +155,22 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
         ut_plots.save_plot(fig4, ax4, folder_plots, 'gain', mouse, False)
         # Take into account that total values are dependent on size of experiment, so only features per min should be
         # use for this part of the analysis
+
+    for signal in ['hit_array', 'time_to_hit']:
+        max_length = df[signal].apply(len).max()
+        df[signal] = df[signal].apply(lambda arr: np.pad(arr, (0, max_length- len(arr)), constant_values=np.nan))
+        df_group = df.groupby(["mice", "experiment"])[signal].mean().reset_index()
+        df_exp = df_group[df_group.experiment=='D1act']
+        expanded_values = df_exp[signal].apply(pd.Series)
+        df_cleaned = expanded_values.dropna(axis=1, how='all')
+        array_data = df_cleaned.to_numpy()
+        arr_1d = array_data.flatten()
+        rows, cols = array_data.shape
+        x = np.tile(np.arange(cols), rows)
+        fig7, ax7 = ut_plots.open_plot()
+        sns.regplot(x=x, y=arr_1d, x_estimator=np.nanmean, color='gray', x_bins=20, ax=ax7)
+        ut_plots.get_reg_pvalues(arr_1d, x, ax7, np.nanmean(x), np.nanmean(arr_1d))
+        ut_plots.save_plot(fig7, ax7, folder_plots, 'array', signal, False)
 
 
 def plot_performance_sessions(df: pd.DataFrame, folder_plots: Path):
