@@ -83,6 +83,12 @@ def get_pvalues(a, b, ax, pos: float = 0, height: float = 0.13, ind: bool = True
     ax.text(pos + pos * 0.1, height - height / 3, "p = %0.2E" % p_value)
 
 
+def get_reg_pvalues(arr: np.array, x: np.array, ax, pos: float = 0, height: float = 0.13):
+    _, _, _, p_value, _ = stats.linregress(x[~np.isnan(arr)], arr[~np.isnan(arr)])
+    ax.text(pos, height, calc_pvalue(p_value))
+    ax.text(pos + pos * 0.1, height - height / 3, "p = %0.2E" % p_value)
+
+
 def calc_pvalue(p_value: float) -> str:
     """ returns a string with the pvalue ready to plot """
     if p_value <= 0.001:
