@@ -13,7 +13,8 @@ def run_all_experiments(folder_list: list, folder_temp_save: str = 'C:/Users/Nur
     """ function to run and process all experiments with suite2p """
     folder_temp_save = Path(folder_temp_save)
     default_path = folder_temp_save / "default_var"
-    for experiment_type in AnalysisConstants.experiment_types:
+    for experiment_type in ['CONTROL_LIGHT', 'RANDOM', 'NO_AUDIO', 'DELAY']:
+        # AnalysisConstants.experiment_types:
         df = ss.get_sessions_df(folder_list, experiment_type)
         for index, row in df.iterrows():
             if row['mice_name'] not in ['m13', 'm15', 'm16', 'm18']:

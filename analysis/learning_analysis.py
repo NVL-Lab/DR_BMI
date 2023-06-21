@@ -31,7 +31,7 @@ def gain_self_stim(file_path: str, time_or_hit: str = 'time') -> [float, float, 
         BMI_time = len(self_hits[baseline_time:end_bmi])
         BMI_minutes = BMI_time / AnalysisConstants.framerate / 60
         exp_frames = self_hits[init_bmi:end_bmi]
-        bin_edges = np.linspace(0, len(exp_frames), int(BMI_minutes) + 1)
+        bin_edges = np.linspace(0, len(exp_frames), int(len(exp_frames) / AnalysisConstants.framerate / 60) + 1)
         hit_array, _, _ = binned_statistic(np.arange(len(exp_frames)), exp_frames, bins=bin_edges, statistic='sum')
         time_to_hit = np.diff(np.where(trial_start)[0])
         if baseline_hits == 0 or BMI_time == 0:

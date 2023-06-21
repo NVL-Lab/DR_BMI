@@ -93,6 +93,26 @@ def plot_occupancy(df_occupancy, folder_plots: Path, bad_mice: list):
         ut_plots.get_pvalues(a, b, ax3, pos=0.5, height=a[~np.isnan(a)].mean())
         ut_plots.save_plot(fig3, ax3, folder_plots, ratio, 'T1T2', False)
 
+    baseline_columns = ['base_T1_occupancy', 'base_T1_hits', 'base_T2_occupancy', 'base_T2_hits']
+    df_baseline = df_occupancy[basic_columns + baseline_columns].copy()
+    df_baseline = df_baseline.rename(columns=lambda x: x.replace('base_', ''))
+    df_melted = df_baseline.melt(id_vars=basic_columns, var_name='target_measure', value_name='value')
+    df_melted[['target', 'measure']] = df_melted['target_measure'].str.split('_', expand=True)
+    df_melted = df_melted.drop(columns='target_measure')
+    for measure in df_melted.measure.unique():
+        df_subset = df_melted[df_melted.measure == measure]
+        df_subset = df_subset[df_subset.experiment=='D1act']
+        df_group = df_subset.groupby(["mice", "target"]).mean().reset_index()
+        fig4, ax4 = ut_plots.open_plot()
+        sns.lineplot(data=df_group, x='target', y='value', hue='mice', palette=color_mapping, ax=ax4)
+        sns.stripplot(data=df_group, x='target', y='value', hue='mice', palette=color_mapping, ax=ax4, s=10,
+                      marker="D", jitter=False)
+        ax4.set_xlabel(measure)
+        a = df_group[df_group['target'] == 'T1']['value']
+        b = df_group[df_group['target'] == 'T2']['value']
+        ut_plots.get_pvalues(a, b, ax4, pos=0.5, height=a[~np.isnan(a)].mean(), ind=False)
+        ut_plots.save_plot(fig4, ax4, folder_plots, measure, 'baseline_t1t2', False)
+
 
 def plot_occupancy_good_sessions(df: pd.DataFrame, df_occupancy: pd.DataFrame):
     """ function to check the occupancy of sessions that had a good outcome (besides D1act)"""
