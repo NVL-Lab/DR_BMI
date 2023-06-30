@@ -52,7 +52,7 @@ def obtain_motion_behav_data(folder_list: list, speed_min=AnalysisConfiguration.
     """ function to compare motion characteristics between baseline and experiment """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.behav_type:
-        df_sessions = ss.get_behav_df(folder_list, experiment_type)
+        df_sessions = ss.get_motor_data_behav(folder_list, experiment_type)
         mice = df_sessions.mice_name.unique()
         for aa, mouse in enumerate(mice):
             df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]

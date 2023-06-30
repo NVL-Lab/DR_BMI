@@ -1,9 +1,9 @@
 # some utils that may be shared among some plot functions
-from typing import Optional
+from typing import Optional, Tuple
 
-import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy import stats
@@ -11,7 +11,7 @@ from scipy import stats
 from utils.analysis_constants import AnalysisConstants
 
 
-def open_plot(sizes: tuple = [8, 6]):
+def open_plot(sizes: tuple = (8, 6)):
     fig = plt.figure(figsize=sizes)
     ax = fig.add_subplot(111)
     ax.spines["top"].set_visible(False)
@@ -108,3 +108,19 @@ def generate_palette_all_figures(mice: np.array = AnalysisConstants.mice, palett
     """ function to generate palette for all mice for all figures """
     custom_palette = sns.color_palette(palette, n_colors=len(mice))
     return {mouse: color for mouse, color in zip(mice, custom_palette)}
+
+
+def array_regplot(df: pd.DataFrame, column: str) -> Tuple[np.array, np.array]:
+    """ function to return x and y values for a regplot """
+    expanded_values = df[column].apply(pd.Series)
+    df_cleaned = expanded_values.dropna(axis=1, how='all')
+    array_data = df_cleaned.to_numpy()
+    return flatten_array(array_data)
+
+
+def flatten_array(array_data: np.array) -> Tuple[np.array, np.array]:
+    """ function to return x and y from a np.array """
+    arr_1d = array_data.flatten()
+    rows, cols = array_data.shape
+    x = np.tile(np.arange(cols), rows)
+    return x, arr_1d

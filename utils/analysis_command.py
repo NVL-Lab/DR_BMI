@@ -37,3 +37,6 @@ class AnalysisConfiguration:
     # filtering background calcium signal
     filter_size: int = 500  # in frames
 
+    # time_locked
+    time_lock_seconds: int = 10  # number of seconds before and after target to get info
+

@@ -7,29 +7,28 @@ import numpy as np
 
 from pathlib import Path
 from matplotlib import interactive
+from scipy.stats import gmean
 
-from utils.util_plots import generate_palette_all_figures
-from utils.utils_analysis import harmonic_mean, geometric_mean, remove_bad_mice
-from utils import util_plots as ut_plots
+import analysis.learning_population as lp
+import utils.utils_analysis as ut
+import utils.util_plots as ut_plots
 from utils.analysis_constants import AnalysisConstants
-from analysis.learning_population import get_bad_mice
 
 interactive(True)
 
 
 def plot_learning(df: pd.DataFrame, folder_plots: Path):
     """ function to plot learning stats """
-    bad_mice, average_control, _ = get_bad_mice(df)
-    mice = df.mice.unique()
-    good_mice = np.setdiff1d(mice, bad_mice)
-    df = remove_bad_mice(df, bad_mice)
+    bad_mice, average_control, _ = lp.get_bad_mice(df)
+    df = ut.remove_bad_mice(df, bad_mice)
     df = df.dropna()
-    color_mapping = generate_palette_all_figures()
+    color_mapping = ut_plots.generate_palette_all_figures()
 
     fig0, ax0 = ut_plots.open_plot()
     experiments = ['D1act', 'CONTROL']
     df_fig0 = df[df.experiment.isin(experiments)]
-    df_group = df_fig0.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').sort_values('experiment').reset_index()
+    df_group = \
+        df_fig0.groupby(["mice", "experiment"]).apply(ut.geometric_mean, 'gain').sort_values('experiment').reset_index()
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiments, ax=ax0)
     sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=experiments, palette=color_mapping, ax=ax0)
     ax0.set_ylim([0.15, 3])
@@ -41,7 +40,7 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     fig1, ax1 = ut_plots.open_plot()
     experiments = ['D1act', 'CONTROL_AGO', 'CONTROL_LIGHT']
     df_fig1 = df[df.experiment.isin(experiments)]
-    df_group = df_fig1.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    df_group = df_fig1.groupby(["mice", "experiment"]).apply(ut.geometric_mean, 'gain').reset_index()
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiments, ax=ax1)
     sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=experiments, palette=color_mapping, ax=ax1)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
@@ -57,7 +56,7 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     fig2, ax2 = ut_plots.open_plot()
     experiments = ['D1act', 'DELAY', 'RANDOM']
     df_fig2 = df[df.experiment.isin(experiments)]
-    df_group = df_fig2.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    df_group = df_fig2.groupby(["mice", "experiment"]).apply(ut.geometric_mean, 'gain').reset_index()
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiments, ax=ax2)
     sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=experiments, palette=color_mapping, ax=ax2)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
@@ -73,7 +72,7 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     fig3, ax3 = ut_plots.open_plot()
     experiments = ['D1act', 'NO_AUDIO']
     df_fig3 = df[df.experiment.isin(experiments)]
-    df_group = df_fig3.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    df_group = df_fig3.groupby(["mice", "experiment"]).apply(ut.geometric_mean, 'gain').reset_index()
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiments, ax=ax3)
     sns.stripplot(data=df_group, x='experiment', y='gain', hue='mice', order=experiments, palette=color_mapping, ax=ax3)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
@@ -85,16 +84,17 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
 
     # only same mice
     fig6, ax6 = ut_plots.open_plot()
-    experiment = ['D1act', 'CONTROL_AGO', 'CONTROL_LIGHT']
-    df_fig6 = df[df.experiment.isin(experiment)]
+    experiment_type = ['D1act', 'CONTROL_AGO', 'CONTROL_LIGHT']
+    df_fig6 = df[df.experiment.isin(experiment_type)]
     all_experiment = set(df_fig6['experiment'])
     grouped = df_fig6.groupby('mice')['experiment'].nunique()
     selected_mice = grouped[grouped == len(all_experiment)].index
     # Select the entries in the 'mice' column that match the selected mice
     sub_df = df_fig6[df_fig6['mice'].isin(selected_mice)]
-    df_group = sub_df.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
-    df_group = df_group.sort_values(by='experiment', key=lambda x: x.map({value: i for i, value in enumerate(experiment)}))
-    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiment, ax=ax6)
+    df_group = sub_df.groupby(["mice", "experiment"]).apply(ut.geometric_mean, 'gain').reset_index()
+    df_group = df_group.sort_values(by='experiment',
+                                    key=lambda x: x.map({value: i for i, value in enumerate(experiment_type)}))
+    sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=experiment_type, ax=ax6)
     sns.lineplot(data=df_group, x='experiment', y='gain', hue='mice', palette=color_mapping, ax=ax6)
     plt.axhline(y=average_control, color='#990000', linestyle='--')
     ax6.set_ylim([0.15, 3])
@@ -107,14 +107,14 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     ut_plots.save_plot(fig6, ax6, folder_plots, 'control_same_mice', 'av_mice', False)
 
     fig4, ax4 = ut_plots.open_plot()
-    experiment = ['D1act', 'RANDOM', 'DELAY']
-    df_fig4 = df[df.experiment.isin(experiment)]
+    experiment_type = ['D1act', 'RANDOM', 'DELAY']
+    df_fig4 = df[df.experiment.isin(experiment_type)]
     all_experiment = set(df_fig4['experiment'])
     grouped = df_fig4.groupby('mice')['experiment'].nunique()
     selected_mice = grouped[grouped == len(all_experiment)].index
     # Select the entries in the 'mice' column that match the selected mice
     sub_df = df_fig4[df_fig4['mice'].isin(selected_mice)]
-    df_group = sub_df.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    df_group = sub_df.groupby(["mice", "experiment"]).apply(ut.geometric_mean, 'gain').reset_index()
     order_fig4 = ['D1act', 'DELAY', 'RANDOM']
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig4, ax=ax4)
     sns.lineplot(data=df_group, x='experiment', y='gain', hue='mice', palette=color_mapping, ax=ax4)
@@ -129,14 +129,14 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
     ut_plots.save_plot(fig4, ax4, folder_plots, 'timing_same_mice', 'av_mice', False)
 
     fig5, ax5 = ut_plots.open_plot()
-    experiment = ['D1act', 'NO_AUDIO']
-    df_fig5 = df[df.experiment.isin(experiment)]
+    experiment_type = ['D1act', 'NO_AUDIO']
+    df_fig5 = df[df.experiment.isin(experiment_type)]
     all_experiment = set(df_fig3['experiment'])
     grouped = df_fig5.groupby('mice')['experiment'].nunique()
     selected_mice = grouped[grouped == len(all_experiment)].index
     # Select the entries in the 'mice' column that match the selected mice
     sub_df = df_fig5[df_fig5['mice'].isin(selected_mice)]
-    df_group = sub_df.groupby(["mice", "experiment"]).apply(geometric_mean, 'gain').reset_index()
+    df_group = sub_df.groupby(["mice", "experiment"]).apply(ut.geometric_mean, 'gain').reset_index()
     order_fig5 = ['D1act', 'NO_AUDIO']
     sns.boxplot(data=df_group, x='experiment', y='gain', color='gray', order=order_fig5, ax=ax5)
     sns.lineplot(data=df_group, x='experiment', y='gain', hue='mice', palette=color_mapping, ax=ax5)
@@ -158,20 +158,15 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
 
     for signal in ['hit_array', 'time_to_hit']:
         max_length = df[signal].apply(len).max()
-        df[signal] = df[signal].apply(lambda arr: np.pad(arr, (0, max_length- len(arr)), constant_values=np.nan))
+        df[signal] = df[signal].apply(lambda arr: np.pad(arr, (0, max_length - len(arr)), constant_values=np.nan))
         df_group = df.groupby(["mice", "experiment"])[signal].mean().reset_index()
         fig7, ax7 = ut_plots.open_plot()
         color_this_plot = {'D1act': 'gray', 'CONTROL': 'k'}
-        for experiment in ['D1act']:
-            df_exp = df_group[df_group.experiment==experiment]
-            expanded_values = df_exp[signal].apply(pd.Series)
-            df_cleaned = expanded_values.dropna(axis=1, how='all')
-            array_data = df_cleaned.to_numpy()
-            arr_1d = array_data.flatten()
-            rows, cols = array_data.shape
-            x = np.tile(np.arange(cols), rows)
-            sns.regplot(x=x, y=arr_1d, x_estimator=np.nanmean, color=color_this_plot[experiment], ax=ax7)
-            ut_plots.get_reg_pvalues(arr_1d, x, ax7, np.nanmean(x), np.nanmean(arr_1d))
+        for experiment_type in ['D1act']:
+            df_exp = df_group[df_group.experiment == experiment_type]
+            x, y = ut_plots.array_regplot(df_exp, signal)
+            sns.regplot(x=x, y=y, x_estimator=gmean, color=color_this_plot[experiment_type], ax=ax7)
+            ut_plots.get_reg_pvalues(y, x, ax7, np.nanmean(x), np.nanmean(y))
         ut_plots.save_plot(fig7, ax7, folder_plots, 'array', signal, False)
 
 
@@ -191,7 +186,8 @@ def plot_performance_sessions(df: pd.DataFrame, folder_plots: Path):
         ut_plots.save_plot(fig1, ax1, folder_plots,
                            'Differences_same_day_session_' + experiment_type, 'gain', False)
         fig2, ax2 = ut_plots.open_plot()
-        previous_experiments = df_experiment_type[df_experiment_type.previous_session!="None"].previous_session.unique()
+        previous_experiments = \
+            df_experiment_type[df_experiment_type.previous_session != "None"].previous_session.unique()
         sns.boxplot(data=df_experiment_type, x='previous_session', y='gain', ax=ax2)
         for pe, pre_ses in enumerate(previous_experiments):
             ut_plots.get_pvalues(df_experiment_type[df_experiment_type.previous_session == pre_ses]['gain'],
@@ -205,7 +201,7 @@ def plot_performance_sessions(df: pd.DataFrame, folder_plots: Path):
 def plot_across_day_learning(df: pd.DataFrame, folder_plots: Path):
     """ Function to plot learning over days """
     df_group = df[df.experiment == 'D1act']
-    color_mapping = generate_palette_all_figures()
+    color_mapping = ut_plots.generate_palette_all_figures()
 
     fig1, ax1 = ut_plots.open_plot()
     sns.stripplot(data=df_group, x="day_index", y='gain', hue='mice', palette=color_mapping, ax=ax1)
@@ -219,11 +215,11 @@ def plot_across_day_learning(df: pd.DataFrame, folder_plots: Path):
     ut_plots.save_plot(fig1, ax1, folder_plots, 'across_days_1st', 'gain', False)
 
 
-def plot_extinction(df_ext: pd.DataFrame, folder_plots: Path, bad_mice: list):
+def plot_extinction(df_ext: pd.DataFrame, folder_plots: Path, bad_mice: list, average_control: float):
     df_fig = df_ext[~df_ext.mice.isin(bad_mice)]
     df_fig.replace("None", np.nan, inplace=True)
     df_fig.dropna()
-    color_mapping = generate_palette_all_figures()
+    color_mapping = ut_plots.generate_palette_all_figures()
 
     # Iterate over each row in df_selected
     for measure in ['hpm', 'gain']:
@@ -241,6 +237,73 @@ def plot_extinction(df_ext: pd.DataFrame, folder_plots: Path, bad_mice: list):
         sns.stripplot(data=df_new, x='experiments', y='values', hue='mice', palette=color_mapping, jitter=False, s=10,
                       marker="D", ax=ax1)
         ut_plots.save_plot(fig1, ax1, folder_plots, 'extinction', measure, False)
+
+    # plot the hits/min and timetohit
+    df_ext["hits_per_min"] = df_ext["hits_per_min"].apply(ut.add_nan_arrays)
+    shortest_length = min(len(arr[0]) for arr in df_ext['hits_per_min'])
+    df_ext['hits_per_min'] = df_ext['hits_per_min'].apply(lambda arr: [a[:shortest_length] for a in arr])
+    task_length = df_ext.loc[1, "hits_per_min"][0].shape[0]
+    df_ext['hits_per_min'] = df_ext['hits_per_min'].apply(lambda arr: np.concatenate(arr))
+    max_length = max(len(arr) for arr in df_ext['hits_per_min'])
+    extracted_info = np.vstack([np.concatenate([arr, np.full(max_length - len(arr), np.nan)])
+                                for arr in df_ext['hits_per_min']])
+    baseline_data = extracted_info[:, :5].mean(1)
+
+    smooth_factor = 5
+    smoothed_first = np.full([extracted_info.shape[0], task_length], np.nan)
+    for i in range(extracted_info.shape[0]):
+        smoothed_first[i, int(smooth_factor/2):task_length - int(smooth_factor/2)] =\
+            np.convolve(extracted_info[i, :task_length]/baseline_data[i],
+                        np.ones(smooth_factor) / smooth_factor, mode='valid')
+
+    # Smooth the rest of the array along columns
+    smoothed_rest = np.full([extracted_info.shape[0], extracted_info.shape[1] - task_length], np.nan)
+    for i in range(extracted_info.shape[0]):
+        smoothed_rest[i, int(smooth_factor/2):extracted_info.shape[1] - task_length - int(smooth_factor/2)] = \
+            np.convolve(extracted_info[i, task_length:]/baseline_data[i],
+                        np.ones(smooth_factor) / smooth_factor, mode='valid')
+
+    fig1, ax1 = ut_plots.open_plot((3, 4))
+    ax1.errorbar(x=np.arange(smoothed_first.shape[1]), y=gmean(smoothed_first, nan_policy='omit'),
+                 yerr=np.nanstd(smoothed_first, 0) / np.sqrt(smoothed_first.shape[0]))
+    plt.axhline(y=average_control, color='#990000', linestyle='--')
+    ax1.set_ylim([0, 3.5])
+    ut_plots.save_plot(fig1, ax1, folder_plots, 'ext_time', 'first', False)
+
+    fig2, ax2 = ut_plots.open_plot((6, 4))
+    ax2.errorbar(x=np.arange(smoothed_rest.shape[1]), y=gmean(smoothed_rest, nan_policy='omit'),
+                 yerr=np.nanstd(smoothed_rest, 0) / np.sqrt(smoothed_rest.shape[0]))
+    plt.axhline(y=average_control, color='#990000', linestyle='--')
+    ax2.set_ylim([0, 3.5])
+    ut_plots.save_plot(fig2, ax2, folder_plots, 'ext_time', 'rest', False)
+
+
+def plot_hpm_vs_tth(df: pd.DataFrame, folder_plots: Path):
+    """ function to plot the relation of hpm and tth """
+    color_mapping = ut_plots.generate_palette_all_figures()
+    # average per session
+    df['average_tth'] = df['time_to_hit'].apply(ut.calculate_average)
+    df['average_hpm'] = df['hit_array'].apply(ut.calculate_average)
+    fig0, ax0 = ut_plots.open_plot()
+    sns.scatterplot(data=df, y='average_tth', x='average_hpm', palette=color_mapping, ax=ax0)
+    ut_plots.save_plot(fig0, ax0, folder_plots, 'tth_vs_hpm', 'per_session', False)
+
+    # in detail
+    df['averages'] = df.apply(lambda row: lp.calculate_time_to_hit_per_min(row), axis=1)
+    unfolded_rows = []
+    for _, row in df.iterrows():
+        unfolded_rows.extend(ut.unfold_arrays(row, 'averages', 'hit_array'))
+
+    new_df = pd.DataFrame(unfolded_rows, columns=['mice', 'averages', 'hit_array'])
+    fig1, ax1 = ut_plots.open_plot()
+    sns.scatterplot(data=new_df, y='averages', x='hit_array', hue='mice', palette=color_mapping, ax=ax1)
+    ut_plots.save_plot(fig1, ax1, folder_plots, 'tth_vs_hpm', 'per_min', False)
+
+
+
+
+
+
 
 
 

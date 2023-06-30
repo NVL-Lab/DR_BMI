@@ -1,5 +1,7 @@
 __author__ = 'Nuria'
 
+import os
+
 import numpy as np
 from pathlib import Path
 
@@ -9,12 +11,12 @@ from preprocess import sessions as ss
 from utils.analysis_constants import AnalysisConstants
 
 
-def run_all_experiments(folder_list: list, folder_temp_save: str = 'C:/Users/Nuria/Documents/DATA/D1exp'):
+def run_all_experiments(folder_list: list, folder_temp_save: str = 'C:/Users/Nuria/Documents/DATA/D1exp', npass:int =1):
     """ function to run and process all experiments with suite2p """
     folder_temp_save = Path(folder_temp_save)
     default_path = folder_temp_save / "default_var"
-    for experiment_type in ['CONTROL_LIGHT', 'RANDOM', 'NO_AUDIO', 'DELAY']:
-        # AnalysisConstants.experiment_types:
+    for experiment_type in AnalysisConstants.experiment_types:
+        # ['D1act', 'CONTROL_LIGHT', 'RANDOM', 'NO_AUDIO', 'DELAY']:
         df = ss.get_sessions_df(folder_list, experiment_type)
         for index, row in df.iterrows():
             if row['mice_name'] not in ['m13', 'm15', 'm16', 'm18']:
@@ -34,10 +36,42 @@ def run_all_experiments(folder_list: list, folder_temp_save: str = 'C:/Users/Nur
                             'save_path0': str(folder_processed_experiment),
                             'fast_disk': str(Path(folder_temp_save)),
                         }
+                        if npass == 1:
+                            ops_1st_pass = pp.prepare_ops_1st_pass(default_path, folder_suite2p / 'ops_before_1st.npy')
+                            ops_after_1st_pass = run_s2p(ops_1st_pass, db)
+                            np.save(folder_suite2p / 'ops_after_1st_pass.npy', ops_after_1st_pass, allow_pickle=True)
+                        else:
+                            aux_ops = np.load(Path(default_path) / "default_ops.npy", allow_pickle=True)
+                            ops = aux_ops.take(0)
+                            ops_after_n_pass = run_s2p(ops, db)
+                            ops_name = 'ops_after_' + str(npass) + '_pass.npy'
+                            np.save(folder_suite2p / ops_name, ops_after_n_pass, allow_pickle=True)
 
-                        ops_1st_pass = pp.prepare_ops_1st_pass(default_path, folder_suite2p / 'ops_before_1st.npy')
-                        ops_after_1st_pass = run_s2p(ops_1st_pass, db)
-                        np.save(folder_suite2p / 'ops_after_1st_pass.npy', ops_after_1st_pass, allow_pickle=True)
+
+def run_behav_baseline(folder_list: list, folder_temp_save: str = 'C:/Users/Nuria/Documents/DATA/D1exp'):
+    """ function to run the suite2p bor laser on-off on behavior neural data"""
+    folder_temp_save = Path(folder_temp_save)
+    default_path = folder_temp_save / "default_var"
+    df = ss.get_neural_data_behav(folder_list)
+    for index, row in df.iterrows():
+        folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+        folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+        folder_raw_experiment = Path(folder_raw) / row['session_path']
+        folder_processed_experiment = Path(folder_process) / row['session_path'] / 'behavior'
+        folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+        if not Path(folder_suite2p).exists():
+            Path(folder_suite2p).mkdir(parents=True, exist_ok=True)
+        file_origin = folder_raw_experiment / 'im/baseline' / row['Baseline_im']
+        data_path = [str(folder_raw_experiment / 'im/behavior' / row['Behavior_im']), str(file_origin)]
+        db = {
+            'data_path': data_path,
+            'save_path0': str(folder_processed_experiment),
+            'fast_disk': str(Path(folder_temp_save)),
+        }
+
+        ops_behav = pp.prepare_ops_behav_pass(default_path, folder_suite2p / 'ops_behav.npy')
+        ops_after_behav_pass = run_s2p(ops_behav, db)
+        np.save(folder_suite2p / 'ops_after_behav_pass.npy', ops_after_behav_pass, allow_pickle=True)
 
 
 def create_bad_frames_after_first_pass(folder_list: list):
@@ -46,15 +80,19 @@ def create_bad_frames_after_first_pass(folder_list: list):
     for experiment_type in ['D1act', 'CONTROL_LIGHT', 'RANDOM', 'NO_AUDIO', 'DELAY']:
         df = ss.get_sessions_df(folder_list, experiment_type)
         for index, row in df.iterrows():
-            folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
-            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
-            folder_experiment = Path(folder_raw) / row['session_path']
-            folder_processed_experiment = Path(folder_process) / row['session_path']
-            folder_fneu_old = folder_processed_experiment / 'suite2p' / 'fneu_old'
-            fneu_old = np.load(Path(folder_fneu_old) / "Fneu.npy")
-            bad_frames, _, _, _, _, _ = pp.obtain_bad_frames_from_fneu(fneu_old)
-            file_origin = folder_experiment / "im/baseline" / row["Baseline_im"]
-            np.save(file_origin / 'bad_frames.npy', bad_frames)
+            if row['mice_name'] not in ['m13', 'm15', 'm16', 'm18']:
+                folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+                folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+                folder_experiment = Path(folder_raw) / row['session_path']
+                folder_processed_experiment = Path(folder_process) / row['session_path']
+                folder_fneu_old = folder_processed_experiment / 'suite2p' / 'fneu_old'
+                if os.path.exists(folder_fneu_old):
+                    fneu_old = np.load(Path(folder_fneu_old) / "Fneu.npy")
+                    bad_frames, _, _, _, _, _ = pp.obtain_bad_frames_from_fneu(fneu_old)
+                    file_origin = folder_experiment / "im/baseline" / row["Baseline_im"]
+                    np.save(file_origin / 'bad_frames.npy', bad_frames)
+                else:
+                    print(folder_fneu_old)
 
 
 def create_dff(folder_list: list):

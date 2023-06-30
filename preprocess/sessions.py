@@ -68,12 +68,6 @@ _D1act = {
         'm23/230421/D04',
         'm23/230422/D05'
     ],
-    'm25': [
-        'm25/230414/D06',
-        'm25/230415/D07',
-        'm25/230416/D08',
-        'm25/230417/D09'
-    ],
     'm26': [
         'm26/230414/D06',
         'm26/230415/D07',
@@ -123,10 +117,6 @@ _RANDOM = {
         'm23/230423/D06',
         'm23/230424/D07',
     ],
-    'm25': [
-        'm25/230412/D04',
-        'm25/230413/D05',
-    ],
     'm26': [
         'm26/230412/D04',
         'm26/230413/D05',
@@ -157,9 +147,6 @@ _CONTROL_LIGHT = {
     'm23': [
         'm23/230418/D01'
     ],
-    'm25': [
-        'm25/230406/D01'
-    ],
     'm26': [
         'm26/230406/D01'
     ],
@@ -184,9 +171,6 @@ _CONTROL_AGO = {
     'm22': [
         'm22/230422/D10'
     ],
-    'm25': [
-        'm25/230418/D10'
-    ],
     'm26': [
         'm26/230418/D10'
     ],
@@ -206,10 +190,6 @@ _NO_AUDIO = {
     'm22': [
         'm22/230423/D11',
         'm22/230424/D12'
-    ],
-    'm25': [
-        'm25/230407/D02',
-        'm25/230408/D03',
     ],
     'm26': [
         'm26/230407/D02',
@@ -282,16 +262,20 @@ _CONTROL = {
 
 _BEHAVIOR = {
     'm13': [
-        'm13/221113/D02'
+        'm13/221113/D02',
+        'm13/221114/D03'
     ],
     'm15': [
-        'm15/221113/D02'
+        'm15/221113/D02',
+        'm15/221114/D03'
     ],
     'm16': [
-        'm16/221113/D02'
+        'm16/221113/D02',
+        'm16/221114/D03'
     ],
     'm18': [
-        'm18/221113/D02'
+        'm18/221113/D02',
+        'm18/221114/D03'
     ],
     'm21': [
         'm21/230407/D02',
@@ -303,10 +287,6 @@ _BEHAVIOR = {
     ],
     'm23': [
         'm23/230419/D02'
-    ],
-    'm25': [
-        'm25/230407/D02',
-        'm25/230408/D03'
     ],
     'm26': [
         'm26/230407/D02',
@@ -347,10 +327,6 @@ _MOTOR_beh_before_BMI = {
     ],
     'm23': [
         'm23/230419/D02'
-    ],
-    'm25': [
-        'm25/230407/D02',
-        'm25/230408/D03'
     ],
     'm26': [
         'm26/230407/D02',
@@ -507,7 +483,7 @@ def get_sessions_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
     return pd.DataFrame(ret)
 
 
-def get_behav_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
+def get_motor_data_behav(folder_list: list, experiment_type: str) -> pd.DataFrame:
     """ Function to retrieve the name of the sessions that will be used depending on the experiment type
     and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
     if experiment_type == 'Initial_behavior':
@@ -542,6 +518,38 @@ def get_behav_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
                                 ret['XY'].append(file_name_motor_file)
                             elif trigger_XY == 'Trigger':
                                 ret['trigger'].append(file_name_motor_file)
+
+    return pd.DataFrame(ret)
+
+
+def get_neural_data_behav(folder_list: list) -> pd.DataFrame:
+    """ Function to retrieve the name of the sessions that will be used depending on the experiment type
+    and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
+    dict_items = _BEHAVIOR.items()
+    ret = collections.defaultdict(list)
+    for mice, sessions_per_type in dict_items:
+        for day_index, session_path in enumerate(sessions_per_type):
+            [mice, session_date, day_init] = session_path.split('/')
+            ret['mice_name'].append(mice)
+            ret['session_date'].append(session_date)
+            ret['day_init'].append(day_init)
+            ret['session_path'].append(session_path)
+
+            folder_raw = Path(folder_list[find_folder_path(mice)]) / 'raw'
+            dir_files = Path(folder_raw) / session_path
+            for file_name in os.listdir(dir_files):
+                if file_name[:2] == 'im':
+                    dir_im = Path(folder_raw) / session_path / 'im'
+                    for file_name_im_dir in os.listdir(dir_im):
+                        if file_name_im_dir.lower() in ['behavior', 'baseline']:
+                            dir_im2 = dir_im / file_name_im_dir
+                            for file_name_im_file in os.listdir(dir_im2):
+                                if file_name_im_file[:8] == 'baseline':
+                                    ret['Baseline_im'].append(file_name_im_file)
+                                    ret['Voltage_Baseline'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
+                                elif file_name_im_file[:8] == 'behavior':
+                                    ret['Voltage_Behavior'].append(file_name_im_file + '_Cycle00001_VoltageRecording_001.csv')
+                                    ret['Behavior_im'].append(file_name_im_file)
 
     return pd.DataFrame(ret)
 

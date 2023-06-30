@@ -14,6 +14,10 @@ def increase_percent(a: float, b: float) -> float:
     return ((a - b) / abs(b)) * 100
 
 
+def calculate_average(arr):
+    return np.nanmean(arr)
+
+
 def geometric_mean(df: pd.DataFrame, column: str) -> pd.DataFrame:
     """ calculate the gmean of a dataframe """
     df_out = pd.DataFrame()
@@ -35,4 +39,25 @@ def remove_bad_mice(df: pd.DataFrame, bad_mice: list) -> pd.DataFrame:
     df_good = df_no_control[~df_no_control.mice.isin(bad_mice)]
     df = pd.concat([df_good, df_control])
     return df
+
+
+def add_nan_arrays(arr_list: list) -> list:
+    """ Function to add NaN arrays to lists with less than 3 arrays """
+    while len(arr_list) < 3:
+        arr_list.append(np.array([np.nan] * len(arr_list[0])))
+    return arr_list
+
+
+def align_arrays(arr_list: list, min_length: int) -> list:
+    """ Function to truncate or pad arrays to match the minimum length"""
+    return [arr[:min_length] if len(arr) > min_length else np.pad(arr, (0, min_length - len(arr)), mode='constant',
+                                                                  constant_values=np.nan) for arr in arr_list]
+
+
+def unfold_arrays(row, column1:str, column2:str):
+    """ function to unfold the columns given"""
+    unfolded_rows = []
+    for i in range(len(row['averages'])):
+        unfolded_rows.append([row['mice'], row[column1][i], row[column2][i]])
+    return unfolded_rows
 

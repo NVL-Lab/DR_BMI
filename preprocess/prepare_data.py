@@ -68,6 +68,18 @@ def prepare_ops_1st_pass(default_path: Path, ops_path: Path) -> dict:
     return ops
 
 
+def prepare_ops_behav_pass(default_path: Path, ops_path: Path) -> dict:
+    """ Function to modify the default ops file before 1st pass"""
+    aux_ops = np.load(Path(default_path) / "default_ops.npy", allow_pickle=True)
+    ops = aux_ops.take(0)
+    ops['delete_bin'] = True
+    ops['move_bin'] = False
+    ops['keep_movie_raw'] = False
+    ops['anatomical_only'] = 0
+    np.save(ops_path, ops, allow_pickle=True)
+    return ops
+
+
 def copy_only_mat_files(folder_raw: Path, folder_destination: Path):
     """ function to copy all the mat files without the images (to keep working offline) """
     df_sessions = ss.get_all_sessions()
@@ -99,7 +111,7 @@ def save_neurons_post_process(folder_save: Path, exp_info: pd.Series, E1: list, 
     np.save(Path(folder_suite2p) / "direct_neurons.npy", direct_neurons, allow_pickle=True)
 
 
-def obtain_dffs(folder_suite2p: Path, smooth: bool) -> np.array:
+def obtain_dffs(folder_suite2p: Path, smooth: bool = True) -> np.array:
     """ function to obtain the dffs based on F and Fneu """
     Fneu = np.load(Path(folder_suite2p) / "Fneu.npy")
     F_raw = np.load(Path(folder_suite2p) / "F.npy")
@@ -161,6 +173,9 @@ def sanity_checks(folder_suite2p: Path, folder_fneu_old: Path, folder_process_pl
     ops_after = np.load(Path(folder_suite2p) / "ops.npy", allow_pickle=True)
     ops_after = ops_after.take(0)
     neurons = np.load(Path(folder_suite2p) / "stat.npy", allow_pickle=True)
+    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = aux_dn.take(0)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
     is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
 
     G = ops_after["meanImg"]
@@ -170,15 +185,19 @@ def sanity_checks(folder_suite2p: Path, folder_fneu_old: Path, folder_process_pl
     Bbad = np.zeros((512, 512))
     for nn, neuron in enumerate(neurons):
         if bool(is_cell[nn, 0]):
-            B[int(neuron["med"][0]), int(neuron["med"][1])] = 1
-            for pix in np.arange(neuron["xpix"].shape[0]):
-                R[neuron["ypix"][pix], neuron["xpix"][pix]] = 0.4
+            if nn in ensemble:
+                for pix in np.arange(neuron["xpix"].shape[0]):
+                    B[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
+            else:
+                for pix in np.arange(neuron["xpix"].shape[0]):
+                    R[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
         else:
             Bbad[int(neuron["med"][0]), int(neuron["med"][1])] = 1
             for pix in np.arange(neuron["xpix"].shape[0]):
-                Rbad[neuron["ypix"][pix], neuron["xpix"][pix]] = 0.4
-    RGB = np.stack((R, G / np.nanmax(G)*4, B), axis=2)
-    RGBbad = np.stack((Rbad, G / np.nanmax(G)*4, Bbad), axis=2)
+                Rbad[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
+
+    RGB = np.stack((R * 255, G / G.max() * 255, B * 255), axis=2)
+    RGBbad = np.stack((Rbad * 255, G / G.max() * 255, Bbad * 255), axis=2)
     ut_plots.easy_imshow(RGB, folder_process_plots, 'neurons_location')
     ut_plots.easy_imshow(RGBbad, folder_plots=folder_process_plots, var_sig='bad_neurons_location')
 
@@ -192,8 +211,48 @@ def obtain_synchrony_stim(folder_suite2p: Path):
     stim_time_pp, _ = obtain_stim_time(bad_frames_dict.take(0)['bad_frames_bool'])
 
 
+def create_time_locked_array(arr: np.array, stim_index: np.array):
+    """ function to create the time locked array of an initial array"""
+    num_frames = int(AnalysisConfiguration.time_lock_seconds * AnalysisConstants.framerate)
+
+    # Create an empty array to store the time-locked dff values
+    arr_time_locked = np.zeros((arr.shape[0], len(stim_index), num_frames * 2 + 1))
+
+    # Iterate over each index in stim_time
+    for ii, index in enumerate(stim_index):
+        # Extract the corresponding frames from dff
+        start_frame = index - num_frames
+        end_frame = index + num_frames + 1
+        arr_time_locked[:, ii, :] = arr[:, start_frame:end_frame]
+    return arr_time_locked
 
 
+def move_file_to_old_folder(folder_name):
+    """ moves fneu to fneu_old folder after first pass
+     CAUTION!!! RUN ONLY AFTER 1st PASS"""
+    for root, dirs, files in os.walk(folder_name):
+        if 'suite2p' in dirs:
+            suite2p_dirs = [dir_name for dir_name in dirs if dir_name == 'suite2p']
+            for suite2p_dir in suite2p_dirs:
+                suite2p_path = os.path.join(root, suite2p_dir)
+
+                # Check if 'plane0' subfolder exists
+                plane0_path = os.path.join(suite2p_path, 'plane0')
+                if os.path.exists(plane0_path):
+                    # Check if 'Fneu.npy' file exists
+                    fneu_file_path = os.path.join(plane0_path, 'Fneu.npy')
+                    if os.path.exists(fneu_file_path):
+                        # Create 'fneu_old' subfolder if it doesn't exist
+                        fneu_old_path = os.path.join(suite2p_path, 'fneu_old')
+                        if not os.path.exists(fneu_old_path):
+                            os.makedirs(fneu_old_path)
+
+                        # Move 'Fneu.npy' to 'fneu_old' subfolder
+                        shutil.move(fneu_file_path, fneu_old_path)
+
+                        print(f"File moved successfully: {fneu_file_path}")
+
+    print("File search and move completed.")
 
 
 def kk_for_now(folder_suite2p: Path, BMI_data_path: Path):
