@@ -152,3 +152,42 @@ def plot_example_image(folder_suite2p: Path, folder_plots: Path):
     fig7, ax7 = ut_plots.open_plot()
     ax7.plot(freq, np.arange(cursor_trunc.max(), cursor_trunc.min(), -0.1))
 
+
+def plot_snr(df_snr):
+    """ function to plot the snr for supp fig 2"""
+    df_snr = df_snr.drop('session_path', axis=1)
+    for snr in ['snr_dn', 'snr_all']:
+        fig1, ax1 = ut_plots.open_plot()
+        sns.boxplot(data=df_snr, y=snr, x='mice_name', ax=ax1)
+        ax1.set_xlabel('mice')
+        ax1.set_ylabel(snr)
+
+        fig2, ax2 = ut_plots.open_plot()
+        experiments = AnalysisConstants.experiment_types
+        df_group = df_snr.groupby(["mice_name", "experiment_type"]).mean().reset_index()
+        sns.boxplot(data=df_group, y=snr, x='experiment_type', order=AnalysisConstants.experiment_types, ax=ax2)
+        a = df_group[df_group.experiment_type == 'D1act'][snr]
+        for ee, exp in enumerate(experiments[1:]):
+            b = df_group[df_group.experiment_type == exp][snr]
+            ut_plots.get_pvalues(a, b, ax2, pos=ee+1, height=a[~np.isnan(a)].max(), ind=True)
+        ax2.set_xlabel('experiment_type')
+        ax2.set_ylabel(snr)
+
+        fig3, ax3 = ut_plots.open_plot()
+        experiments = AnalysisConstants.experiment_types
+        sns.boxplot(data=df_snr, y=snr, x='experiment_type', order=AnalysisConstants.experiment_types, ax=ax3)
+        a = df_snr[df_snr.experiment_type == 'D1act'][snr]
+        for ee, exp in enumerate(experiments[1:]):
+            b = df_snr[df_snr.experiment_type == exp][snr]
+            ut_plots.get_pvalues(a, b, ax3, pos=ee + 1, height=a[~np.isnan(a)].max(), ind=True)
+        ax2.set_xlabel('experiment_type')
+        ax2.set_ylabel(snr)
+
+        fig5, ax5 = ut_plots.open_plot()
+        sns.regplot(data=df_snr, y=snr, x='day_index', ax=ax5)
+        ut_plots.get_reg_pvalues(df_snr[snr], df_snr['day_index'], ax5, 1, 3)
+        ax5.set_xlabel('day_index')
+        ax5.set_ylabel(snr)
+
+
+

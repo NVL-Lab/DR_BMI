@@ -1,8 +1,9 @@
 __author__ = 'Nuria'
 
 import os
-
+import collections
 import numpy as np
+import pandas as pd
 from pathlib import Path
 
 import preprocess.prepare_data as pp
@@ -128,3 +129,24 @@ def run_refines_and_sanity_checks(folder_list: list):
             check_session = pp.sanity_checks(folder_suite2p, folder_fneu_old, folder_process_plots, stim_flag)
             if len(check_session) > 0: sessions_to_double_check.append([row['session_path'], check_session])
     return sessions_to_double_check
+
+
+def obtain_snr(folder_list: list) -> pd.DataFrame:
+    """ function to obtain the snr of all the experiments """
+    ret = collections.defaultdict(list)
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            ret['mice_name'].append(row['mice_name'])
+            ret['experiment_type'].append(row['experiment_type'])
+            ret['session_path'].append(row['session_path'])
+            ret['day_index'].append(row['day_index'])
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_processed_experiment = Path(folder_process) / row['session_path']
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+            snr_all, snr_dn, snr_dn_min = pp.obtain_SNR_per_neuron(folder_suite2p)
+            ret['snr_all'].append(snr_all)
+            ret['snr_dn'].append(snr_dn)
+            ret['snr_dn_min'].append(snr_dn_min)
+    return pd.DataFrame(ret)
+
