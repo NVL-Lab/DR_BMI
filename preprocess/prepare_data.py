@@ -211,7 +211,7 @@ def obtain_synchrony_stim(folder_suite2p: Path):
     stim_time_pp, _ = obtain_stim_time(bad_frames_dict.take(0)['bad_frames_bool'])
 
 
-def create_time_locked_array(arr: np.array, stim_index: np.array):
+def create_time_locked_array(arr: np.array, stim_index: np.array) -> np.array:
     """ function to create the time locked array of an initial array"""
     num_frames = int(AnalysisConfiguration.time_lock_seconds * AnalysisConstants.framerate)
 
@@ -225,6 +225,27 @@ def create_time_locked_array(arr: np.array, stim_index: np.array):
         end_frame = index + num_frames + 1
         arr_time_locked[:, ii, :] = arr[:, start_frame:end_frame]
     return arr_time_locked
+
+
+def obtain_SNR_per_neuron(folder_suite2p: Path) -> Tuple[float, float, float]:
+    """ Function to calculate the SNR given the F and Fneuropil surrounding"""
+    Fneu = np.load(Path(folder_suite2p) / "Fneu.npy")
+    F_raw = np.load(Path(folder_suite2p) / "F.npy")
+    is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
+    direct_neurons_aux = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = direct_neurons_aux.take(0)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
+
+    power_signal_all = np.nanmean(np.square(F_raw[is_cell[:, 0].astype(bool), :]), 1)
+    power_noise_all = np.nanmean(np.square(Fneu[is_cell[:, 0].astype(bool), :]), 1)
+
+    power_signal_dn = np.nanmean(np.square(F_raw[ensemble, :]), 1)
+    power_noise_dn = np.nanmean(np.square(Fneu[ensemble, :]), 1)
+
+    # Calculate the SNR
+    snr_all = 10 * np.log10(power_signal_all / power_noise_all)
+    snr_dn = 10 * np.log10(power_signal_dn / power_noise_dn)
+    return snr_all.mean(), snr_dn.mean(), snr_dn.min()
 
 
 def move_file_to_old_folder(folder_name):
