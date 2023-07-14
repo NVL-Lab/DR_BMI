@@ -28,12 +28,6 @@ _D1act = {
         'm13/221114/D03',
         'm13/221116/D05',
     ],
-    'm15': [
-        'm15/221113/D02',
-        'm15/221114/D03',
-        'm15/221116/D05',
-        'm15/221119/D08',
-    ],
     'm16': [
         'm16/221113/D02',
         'm16/221114/D03',
@@ -92,11 +86,6 @@ _D1act = {
 }
 
 _RANDOM = {
-    'm15': [
-        'm15/221115/D04',
-        'm15/221117/D06',
-        'm15/221118/D07',
-    ],
     'm16': [
         'm16/221115/D04',
         'm16/221117/D06',
@@ -131,9 +120,6 @@ _RANDOM = {
 _CONTROL_LIGHT = {
     'm13': [
         'm13/221112/D01'
-    ],
-    'm15': [
-        'm15/221112/D01'
     ],
     'm16': [
         'm16/221112/D01'
@@ -223,6 +209,49 @@ _DELAY = {
     ]
 }
 
+_SECOND = {
+    'm16': [
+        'm16/221118/D07-2',
+        'm16/221119/D08-2'
+    ],
+    'm18': [
+        'm18/221118/D07-2',
+        'm18/221118/D07-3'
+    ],
+    'm21': [
+        'm21/230414/D06-2',
+        'm21/230415/D07-2',
+        'm21/230416/D08-2'
+    ],
+    'm22': [
+        'm22/230414/D03-2',
+        'm22/230415/D04-2',
+        'm22/230416/D05-2'
+    ],
+    'm23': [
+        'm23/230420/D03-2',
+        'm23/230420/D03-3',
+        'm23/230421/D04-2'
+    ],
+    'm26': [
+        'm26/230414/D06-2',
+        'm26/230415/D07-2',
+        'm26/230417/D09-2'
+    ],
+    'm28': [
+        'm28/230414/D06-2',
+        'm28/230415/D07-2',
+        'm28/230416/D08-2',
+        'm28/230416/D08-3'
+    ],
+    'm29': [
+        'm29/230419/D02-2',
+        'm29/230420/D03-2',
+        'm29/230420/D03-3',
+        'm29/230421/D04-2'
+    ],
+}
+
 _EXTINCTION = {
     'm21': [
         'm21/230418/D10'
@@ -265,10 +294,6 @@ _BEHAVIOR = {
         'm13/221113/D02',
         'm13/221114/D03'
     ],
-    'm15': [
-        'm15/221113/D02',
-        'm15/221114/D03'
-    ],
     'm16': [
         'm16/221113/D02',
         'm16/221114/D03'
@@ -304,10 +329,6 @@ _MOTOR_beh_before_BMI = {
     'm13': [
         'm13/221113/D02',
         'm13/221114/D03'
-    ],
-    'm15': [
-        'm15/221113/D02',
-        'm15/221114/D03'
     ],
     'm16': [
         'm16/221113/D02',
@@ -345,9 +366,6 @@ _MOTOR_initial_behavior = {
     'm13': [
         'm13/221113/D02'
     ],
-    'm15': [
-        'm15/221113/D02'
-    ],
     'm16': [
         'm16/221113/D02'
     ],
@@ -373,11 +391,13 @@ def get_all_sessions() -> pd.DataFrame:
     df_no_audio['experiment_type'] = 'NO_AUDIO'
     df_delay = pd.DataFrame(index=np.concatenate(list(_DELAY.values())))
     df_delay['experiment_type'] = 'DELAY'
+    df_second = pd.DataFrame(index=np.concatenate(list(_SECOND.values())))
+    df_second['experiment_type'] = 'SECOND'
     df_extinction = pd.DataFrame(index=np.concatenate(list(_EXTINCTION.values())))
     df_extinction['experiment_type'] = 'EXTINCTION'
     df_behavior = pd.DataFrame(index=np.concatenate(list(_BEHAVIOR.values())))
     df_behavior['experiment_type'] = 'BEHAVIOR'
-    list_experiments = [df_d1act, df_c, df_c_light, df_c_ago, df_random, df_no_audio, df_delay, df_extinction,
+    list_experiments = [df_d1act, df_c, df_c_light, df_c_ago, df_random, df_no_audio, df_delay, df_second, df_extinction,
                         df_behavior]
     df_experiments = pd.concat(list_experiments)
     return df_experiments.sort_index().reset_index()
@@ -401,6 +421,8 @@ def get_sessions_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
         dict_items = _NO_AUDIO.items()
     elif experiment_type == 'DELAY':
         dict_items = _DELAY.items()
+    elif experiment_type == 'SECOND':
+        dict_items = _SECOND.items()
     elif experiment_type == 'EXTINCTION':
         dict_items = _EXTINCTION.items()
     elif experiment_type == 'BEHAVIOR':

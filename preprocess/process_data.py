@@ -21,32 +21,31 @@ def run_all_experiments(folder_list: list, folder_temp_save: str = 'C:/Users/Nur
         df = ss.get_sessions_df(folder_list, experiment_type)
         for index, row in df.iterrows():
             if row['mice_name'] not in ['m13', 'm15', 'm16', 'm18']:
-                if row['session_day'] == '1st':
-                    folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
-                    folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
-                    folder_raw_experiment = Path(folder_raw) / row['session_path']
-                    folder_processed_experiment = Path(folder_process) / row['session_path']
-                    folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
-                    if not Path(folder_suite2p).exists():
-                        Path(folder_suite2p).mkdir(parents=True, exist_ok=True)
-                        file_origin = folder_raw_experiment / 'im/baseline' / row['Baseline_im']
-                        data_path = [str(file_origin),
-                                     str(folder_raw_experiment / 'im' / row["Experiment_dir"] / row['Experiment_im'])]
-                        db = {
-                            'data_path': data_path,
-                            'save_path0': str(folder_processed_experiment),
-                            'fast_disk': str(Path(folder_temp_save)),
-                        }
-                        if npass == 1:
-                            ops_1st_pass = pp.prepare_ops_1st_pass(default_path, folder_suite2p / 'ops_before_1st.npy')
-                            ops_after_1st_pass = run_s2p(ops_1st_pass, db)
-                            np.save(folder_suite2p / 'ops_after_1st_pass.npy', ops_after_1st_pass, allow_pickle=True)
-                        else:
-                            aux_ops = np.load(Path(default_path) / "default_ops.npy", allow_pickle=True)
-                            ops = aux_ops.take(0)
-                            ops_after_n_pass = run_s2p(ops, db)
-                            ops_name = 'ops_after_' + str(npass) + '_pass.npy'
-                            np.save(folder_suite2p / ops_name, ops_after_n_pass, allow_pickle=True)
+                folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+                folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+                folder_raw_experiment = Path(folder_raw) / row['session_path']
+                folder_processed_experiment = Path(folder_process) / row['session_path']
+                folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+                if not Path(folder_suite2p).exists():
+                    Path(folder_suite2p).mkdir(parents=True, exist_ok=True)
+                    file_origin = folder_raw_experiment / 'im/baseline' / row['Baseline_im']
+                    data_path = [str(file_origin),
+                                 str(folder_raw_experiment / 'im' / row["Experiment_dir"] / row['Experiment_im'])]
+                    db = {
+                        'data_path': data_path,
+                        'save_path0': str(folder_processed_experiment),
+                        'fast_disk': str(Path(folder_temp_save)),
+                    }
+                    if npass == 1:
+                        ops_1st_pass = pp.prepare_ops_1st_pass(default_path, folder_suite2p / 'ops_before_1st.npy')
+                        ops_after_1st_pass = run_s2p(ops_1st_pass, db)
+                        np.save(folder_suite2p / 'ops_after_1st_pass.npy', ops_after_1st_pass, allow_pickle=True)
+                    else:
+                        aux_ops = np.load(Path(default_path) / "default_ops.npy", allow_pickle=True)
+                        ops = aux_ops.take(0)
+                        ops_after_n_pass = run_s2p(ops, db)
+                        ops_name = 'ops_after_' + str(npass) + '_pass.npy'
+                        np.save(folder_suite2p / ops_name, ops_after_n_pass, allow_pickle=True)
 
 
 def run_behav_baseline(folder_list: list, folder_temp_save: str = 'C:/Users/Nuria/Documents/DATA/D1exp'):

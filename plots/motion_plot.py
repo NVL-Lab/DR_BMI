@@ -73,3 +73,6 @@ def remove_bad_mice(df_motion: pd.DataFrame, mouse :str = 'm25'):
     mice = df_motion.mice.unique()
     mice = mice[mice != mouse]
     return df_motion[df_motion.mice.isin(mice)]
+
+
+

@@ -46,6 +46,25 @@ def plot_bout_init():
     ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max(), ind=False)
 
 
+def plot_motor_days(df_motion: pd.DataFrame, folder_plots: Path):
+    """ function to plot the changes on initial motion by day """
+    feature = "initiations_per_min"
+    color_mapping = ut_plots.generate_palette_all_figures()
+    df_motion = df_motion[df_motion.Laser == 'OFF']
+    df_motion['days'] = df_motion.groupby('mice')['session_date'].rank(method='first', ascending=True)
+    min_count = df_motion.groupby('mice')['days'].max().min()
+    df_min = df_motion[df_motion.days.isin([2, min_count])]
+    df_min.loc[df_min.days == 2, 'days'] = 0
+    df_min.loc[df_min.days > 2, 'days'] = 1
+    fig1, ax1 = ut_plots.open_plot()
+    sns.lineplot(data=df_min, x='days', y=feature, hue='mice', palette=color_mapping, ax=ax1)
+    sns.stripplot(data=df_min, x='days', y=feature, hue='mice', palette=color_mapping, s=10,
+                  marker="D", jitter=False, ax=ax1)
+    a = df_min[df_min.days == 0][feature]
+    b = df_min[df_min.days == 1][feature]
+    ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max(), ind=False)
+
+
 def plot_example_image(folder_suite2p: Path, folder_plots: Path):
     ## I've used folder_suite2p ='D:/data/process/m16/221116/D05/suite2p/plane0'
     ops_after = np.load(Path(folder_suite2p) / "ops.npy", allow_pickle=True)
