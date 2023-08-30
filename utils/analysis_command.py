@@ -40,3 +40,10 @@ class AnalysisConfiguration:
     # time_locked
     time_lock_seconds: int = 10  # number of seconds before and after target to get info
 
+    # manifold
+    FA_spks_av_win: int = 30  # number of samples to count spikes. 30 -> 1sec
+    FA_n_neu: int = 50  # number of neurons for the FA
+    FA_n_iter: int = 100  # number of iterations to run the FA for different subset of neurons
+    FA_VAF: float = 0.7  # minimum VAF for FA
+    FA_components: int = 10  # number of components for FA
+

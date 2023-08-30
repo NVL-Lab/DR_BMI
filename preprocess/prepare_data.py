@@ -134,21 +134,22 @@ def obtain_stim_time(bad_frames_bool: np.array) -> Tuple[np.array, np.array]:
     return np.where(stim_time)[0], stim_time.astype(bool)
 
 
-def refine_classifier(folder_suite2p: Path):
+def refine_classifier(folder_suite2p: Path, dn_bool: bool = True):
     """ function to refine the suite2p classifier """
     neurons = np.load(Path(folder_suite2p) / "stat.npy", allow_pickle=True)
     is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
     is_cell_new = copy.deepcopy(is_cell)
-    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
-    direct_neurons_info = aux_dn.take(0)
-    direct_neurons = direct_neurons_info["E1"] + direct_neurons_info["E2"]
-    direct_neurons.sort()
     for nn, neuron in enumerate(neurons):
         if neuron['skew'] > 10 or neuron['skew'] < 0.4 or neuron['compact'] > 1.4 or \
                 neuron['footprint'] == 0 or neuron['footprint'] == 3 or neuron['npix'] < 80:
             is_cell_new[nn, :] = [0, 0]
-    for dn in direct_neurons:
-        is_cell_new[dn, :] = [1, 1]
+    if dn_bool:
+        aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+        direct_neurons_info = aux_dn.take(0)
+        direct_neurons = direct_neurons_info["E1"] + direct_neurons_info["E2"]
+        direct_neurons.sort()
+        for dn in direct_neurons:
+            is_cell_new[dn, :] = [1, 1]
     np.save(Path(folder_suite2p) / "iscell_old.npy", is_cell)
     np.save(Path(folder_suite2p) / "iscell.npy", is_cell_new)
 

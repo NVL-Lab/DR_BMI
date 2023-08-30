@@ -28,9 +28,9 @@ from analysis import learning_analysis
 
 interactive(True)
 
-folder_raw = Path("F:/data/raw")
-folder_save = Path("F:/data/process")
-default_path = folder_save / "default_var"
+folder_list = {'FA': 'D:/data', 'FB': 'F:/data', 'FC': 'G:/data'}
+folder_data = Path("C:/Users/Nuria/Documents/DATA/D1exp/df_data")
+folder_plots = Path("C:/Users/Nuria/Documents/DATA/D1exp/plots")
 
 ###########################################################
 # suite2p
@@ -174,6 +174,18 @@ folder_plots = Path('F:/data/process/plots/learning')
 
 
 ###
-folder_list = {'FA': 'D:/data', 'FB': 'F:/data', 'FC': 'G:/data'}
-folder_data = Path("C:/Users/Nuria/Documents/DATA/D1exp/df_data")
-folder_plots = Path("C:/Users/Nuria/Documents/DATA/D1exp/plots")
+
+
+###
+folder_processed_experiment = Path('G:/data/process/m28/230407/D02/behavior')
+folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+spks = np.load(Path(folder_suite2p) / "spks.npy")
+
+fa.fit(spks_short)
+fb.fit(spks_short_b)
+
+fc.fit(dff_short)
+fd.fit(dff_short_b)
+
+kk = fa.transform(dff_short.T)
+kkb = fb.transform(dff_short_b.T)

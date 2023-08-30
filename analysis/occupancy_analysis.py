@@ -1,3 +1,5 @@
+__author__ = 'Nuria'
+
 import numpy as np
 import pandas as pd
 

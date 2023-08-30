@@ -61,3 +61,28 @@ def unfold_arrays(row, column1:str, column2:str):
         unfolded_rows.append([row['mice'], row[column1][i], row[column2][i]])
     return unfolded_rows
 
+
+def average_array_samples(arr: np.array, dimension_to_average: int, samples_to_average: int) -> np.array:
+    """ function that averages over a dimension_to_average, X number of samples """
+    # Calculate the number of resulting averages
+    num_averages = arr.shape[dimension_to_average] // samples_to_average
+
+    # Reshape the data to create views for averaging
+    reshaped_data = arr.reshape((num_averages, samples_to_average) + (-1,))[..., :arr.shape[1]]
+
+    # Calculate the averages along the specified dimension
+    averages = np.mean(reshaped_data, axis=1)
+    return averages.T
+
+
+def sum_array_samples(arr: np.array, dimension_to_average: int, samples_to_average: int) -> np.array:
+    """ function that averages over a dimension_to_average, X number of samples """
+    # Calculate the number of resulting averages
+    num_averages = arr.shape[dimension_to_average] // samples_to_average
+
+    # Reshape the data to create views for averaging
+    reshaped_data = arr.reshape((num_averages, samples_to_average) + (-1,))[..., :arr.shape[1]]
+
+    # Calculate the averages along the specified dimension
+    sums = np.nansum(reshaped_data, axis=1)
+    return sums.T
