@@ -212,18 +212,17 @@ def obtain_synchrony_stim(folder_suite2p: Path):
     stim_time_pp, _ = obtain_stim_time(bad_frames_dict.take(0)['bad_frames_bool'])
 
 
-def create_time_locked_array(arr: np.array, stim_index: np.array) -> np.array:
+def create_time_locked_array(arr: np.array, stim_index: np.array, num_frames: tuple) -> np.array:
     """ function to create the time locked array of an initial array"""
-    num_frames = int(AnalysisConfiguration.time_lock_seconds * AnalysisConstants.framerate)
 
     # Create an empty array to store the time-locked dff values
-    arr_time_locked = np.zeros((arr.shape[0], len(stim_index), num_frames * 2 + 1))
+    arr_time_locked = np.zeros((arr.shape[0], len(stim_index), np.sum(num_frames)))
 
     # Iterate over each index in stim_time
     for ii, index in enumerate(stim_index):
         # Extract the corresponding frames from dff
-        start_frame = index - num_frames
-        end_frame = index + num_frames + 1
+        start_frame = index - num_frames[0]
+        end_frame = index + num_frames[1]
         arr_time_locked[:, ii, :] = arr[:, start_frame:end_frame]
     return arr_time_locked
 
@@ -276,33 +275,6 @@ def move_file_to_old_folder(folder_name):
 
     print("File search and move completed.")
 
-
-def kk_for_now(folder_suite2p: Path, BMI_data_path: Path):
-    direct_neurons_pp = np.load(folder_suite2p / "direct_neurons.npy", allow_pickle=True)
-    bad_frames_dict = np.load(folder_suite2p / "bad_frames_dict.npy", allow_pickle=True)
-    direct_neurons_pp = direct_neurons_pp.take(0)
-    dff = obtain_dffs(folder_suite2p, smooth=True)
-    dff_direct = dff[direct_neurons_pp["E1"] + direct_neurons_pp['E2'], :]
-
-    # load cursor online and other online data
-    bmi_online = obtain_online_data(BMI_data_path)
-    decoder = bmi_online['bData']['decoder']
-    stim_time_online = bmi_online['data']['selfDRstim'] + bmi_online['data']['randomDRstim']
-
-    stim_time_pp, _ = obtain_stim_time(bad_frames_dict.take(0)['bad_frames_bool'])
-
-    cursor_online = bmi_online['data']['cursor']
-    cursor_online_nonnan = cursor_online[~np.isnan(cursor_online)]
-
-    # obtain cursor postprocessing
-    cursor_pp = np.sum(dff_direct * decoder[:, None], 0)[AnalysisConstants.calibration_frames:]
-
-
-    correlation = signal.correlate(cursor_pp, cursor_online_nonnan)
-    lag_array = signal.correlation_lags(cursor_pp.size, cursor_online_nonnan.size)
-    lag = lag_array[np.where(correlation == np.min(correlation))[0][0]]
-    cursor_online_centered = np.full(cursor_pp.shape, np.nan)
-    cursor_online_centered[-cursor_online_nonnan.size-2700:-2700] = cursor_online_nonnan
 
 
 

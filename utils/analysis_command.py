@@ -38,7 +38,7 @@ class AnalysisConfiguration:
     filter_size: int = 500  # in frames
 
     # time_locked
-    time_lock_seconds: int = 10  # number of seconds before and after target to get info
+    time_lock_seconds: int = 3  # number of seconds before and after target to get info
 
     # manifold
     FA_spks_av_win: int = 30  # number of samples to count spikes. 30 -> 1sec

@@ -15,22 +15,26 @@ import matplotlib.pyplot as plt
 import scipy.io as sio
 import seaborn as sns
 
+import copy
 from pathlib import Path
 from matplotlib import interactive
 
 import preprocess.prepare_data as pp
+import utils.utils_analysis as ut
 from preprocess import sessions as ss
 from preprocess.prepare_data import prepare_ops_1st_pass
 from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 from utils import util_plots as ut_plots
 from analysis import learning_analysis
+import analysis.dynamics_mat as dm
 
 interactive(True)
 
 folder_list = {'FA': 'D:/data', 'FB': 'F:/data', 'FC': 'G:/data'}
 folder_data = Path("C:/Users/Nuria/Documents/DATA/D1exp/df_data")
 folder_plots = Path("C:/Users/Nuria/Documents/DATA/D1exp/plots")
+default_path = Path("C:/Users/Nuria/Documents/DATA/D1exp/default_var")
 
 ###########################################################
 # suite2p
@@ -174,18 +178,32 @@ folder_plots = Path('F:/data/process/plots/learning')
 
 
 ###
+folder_temp_save: str = 'C:/Users/Nuria/Documents/DATA/D1exp'
+folder_temp_save = Path(folder_temp_save)
+default_path = folder_temp_save / "default_var"
 
 
 ###
-folder_processed_experiment = Path('G:/data/process/m28/230407/D02/behavior')
+folder_processed_experiment = Path('D:/data/process/m16/221113/D02')
 folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+stim_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
+stim_time_dict = stim_aux.take(0)
+stim_index = stim_time_dict['stim_time']
 spks = np.load(Path(folder_suite2p) / "spks.npy")
+is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
+dff = pp.obtain_dffs(folder_suite2p)
+aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+direct_neurons = aux_dn.take(0)
+ensemble = direct_neurons['E1'] + direct_neurons['E2']
+indirect_neurons = copy.deepcopy(is_cell)
+indirect_neurons[ensemble, :] = [0, 0]
 
-fa.fit(spks_short)
-fb.fit(spks_short_b)
+dff_tl = pp.create_time_locked_array(dff, stim_index, (60, 60))
+spks_tl = pp.create_time_locked_array(spks, stim_index, (60, 60))
+spks_dn = spks_tl[ensemble, :, :]
+spks_in = spks_tl[indirect_neurons[:, 0].astype(bool), :, :]
+spks_dn_av = ut.sum_array_samples(np.reshape(spks_dn, (spks_dn.shape[0], np.prod(spks_dn.shape[1:]))), 1, 3)
+spks_in_av = ut.sum_array_samples(np.reshape(spks_in, (spks_in.shape[0], np.prod(spks_in.shape[1:]))), 1, 3)
 
-fc.fit(dff_short)
-fd.fit(dff_short_b)
 
-kk = fa.transform(dff_short.T)
-kkb = fb.transform(dff_short_b.T)
+

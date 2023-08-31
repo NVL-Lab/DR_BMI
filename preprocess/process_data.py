@@ -5,9 +5,11 @@ import collections
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from typing import Optional
 
 import preprocess.prepare_data as pp
 from suite2p.run_s2p import run_s2p
+from suite2p.extraction import dcnv
 from preprocess import sessions as ss
 from utils.analysis_constants import AnalysisConstants
 
@@ -105,6 +107,39 @@ def create_dff(folder_list: list):
             folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
             dff = pp.obtain_dffs(folder_suite2p)
             np.save(folder_suite2p / 'dff.npy', dff)
+
+
+def create_spks_from_dff(folder_list: list, default_path):
+    """ function to obtain the spks from dff for each experiment """
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_processed_experiment = Path(folder_process) / row['session_path']
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+            spks_dff = obtain_spks_from_dff(folder_suite2p, default_path)
+            np.save(folder_suite2p / 'spks_dff.npy', spks_dff)
+
+
+def obtain_spks_from_dff(folder_suite2p: Path, default_path: Path, dff: Optional[np.array] = None) -> np.array:
+    """ function to obtain spks based on dff to remove stim artifacts """
+    aux_ops = np.load(Path(default_path) / "default_ops.npy", allow_pickle=True)
+    ops = aux_ops.take(0)
+    if dff is None:
+        dff = pp.obtain_dffs(folder_suite2p)
+
+    # baseline operation
+    Fc = dcnv.preprocess(
+        F=dff,
+        baseline=ops['baseline'],
+        win_baseline=ops['win_baseline'],
+        sig_baseline=ops['sig_baseline'],
+        fs=ops['fs'],
+        prctile_baseline=ops['prctile_baseline']
+    )
+    # get spikes
+    spks_dff = dcnv.oasis(F=Fc, batch_size=ops['batch_size'], tau=ops['tau'], fs=ops['fs'])
+    return spks_dff
 
 
 def run_refines_and_sanity_checks(folder_list: list, stim_flag: bool = True, behav_bool: bool = False):

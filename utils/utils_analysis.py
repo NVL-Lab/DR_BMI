@@ -81,7 +81,7 @@ def sum_array_samples(arr: np.array, dimension_to_average: int, samples_to_avera
     num_averages = arr.shape[dimension_to_average] // samples_to_average
 
     # Reshape the data to create views for averaging
-    reshaped_data = arr.reshape((num_averages, samples_to_average) + (-1,))[..., :arr.shape[1]]
+    reshaped_data = arr.reshape((num_averages, samples_to_average) + (-1,))
 
     # Calculate the averages along the specified dimension
     sums = np.nansum(reshaped_data, axis=1)
