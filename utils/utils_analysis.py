@@ -86,3 +86,45 @@ def sum_array_samples(arr: np.array, dimension_to_average: int, samples_to_avera
     # Calculate the averages along the specified dimension
     sums = np.nansum(reshaped_data, axis=1)
     return sums.T
+
+
+def remove_redundant(arr: np.array, min_dist: int = 40) -> np.array:
+    """ function to remove iteratively redundant events """
+    bad = np.arange(1, arr.shape[0])[np.diff(arr) < min_dist]
+    finish = arr.shape[0]
+    while len(bad) > 0 or finish==0:
+        arr = np.delete(arr, bad[0])
+        bad = np.arange(1, arr.shape[0])[np.diff(arr) < min_dist]
+        finish -= 1
+    return arr
+
+
+def find_closest(arr_orig: np.array, arr_syn: np.array) -> Tuple[np.array, np.array]:
+    """ function to find the closes index of arr_orig for every element of arr_syn"""
+    # Calculate the absolute differences between each element in arr_syn and all elements in arr_origin
+    # Initialize empty lists to store closest indexes and differences
+    closest_indexes = []
+    differences = []
+
+    # Iterate through arr_syn
+    for value_syn in arr_syn:
+        # Calculate the absolute differences between value_syn and all elements in arr_origin
+        absolute_differences = np.abs(arr_orig - value_syn)
+
+        # Find the index of the minimum absolute difference
+        closest_index = np.argmin(absolute_differences)
+
+        # Get the closest value in arr_origin
+        closest_value = arr_orig[closest_index]
+
+        # Calculate the difference, negative if value_syn is smaller, positive if greater
+        difference = value_syn - closest_value
+
+        # Append the closest index and difference to the respective lists
+        closest_indexes.append(closest_index)
+        differences.append(difference)
+
+    # Convert the lists to NumPy arrays for consistency
+    closest_indexes = np.array(closest_indexes)
+    differences = np.array(differences)
+    return closest_indexes, differences

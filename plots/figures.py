@@ -172,7 +172,7 @@ def plot_example_image(folder_suite2p: Path, folder_plots: Path):
     ax7.plot(freq, np.arange(cursor_trunc.max(), cursor_trunc.min(), -0.1))
 
 
-def plot_snr(df_snr):
+def plot_snr(df_snr, df_learning):
     """ function to plot the snr for supp fig 2"""
     df_snr = df_snr.drop('session_path', axis=1)
     for snr in ['snr_dn', 'snr_all']:
@@ -207,6 +207,13 @@ def plot_snr(df_snr):
         ut_plots.get_reg_pvalues(df_snr[snr], df_snr['day_index'], ax5, 1, 3)
         ax5.set_xlabel('day_index')
         ax5.set_ylabel(snr)
+
+    fig6, ax6 = ut_plots.open_plot()
+    merged_df = df_snr.merge(df_learning, on='session_path', how='inner')
+    pearson_corr = merged_df['snr_dn'].corr(merged_df['gain'], method='pearson')
+    sns.scatterplot(data=merged_df, x='snr_dn', y='gain')
+    ax6.text(5, 5, 'r2= ' + str(pearson_corr ** 2))
+
 
 
 

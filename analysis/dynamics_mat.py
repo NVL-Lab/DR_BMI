@@ -32,3 +32,10 @@ def obtain_FA(mat_a: np.array, n_components: Optional[int] = None, VAF: Optional
     else:
         fa_dim = n_components
     return fa_dim, SOT, cum_VAF[-1]
+
+
+def obtain_latent(mat_a: np.array, n_components: int=1):
+    """ function to calculate FA and obtain latent"""
+    fa = FactorAnalysis(n_components=n_components)
+    fa.fit(mat_a.T)
+    return fa.transform(mat_a.T)

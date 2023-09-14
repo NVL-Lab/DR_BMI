@@ -55,12 +55,15 @@ def save_plot(fig: plt.figure, ax: Optional, folder_path: Path, var_sig: str = '
 
 
 def easy_plot(arr: np.array, xx: Optional[np.array] = None, folder_plots: Optional[Path] = None,
-              var_sig: Optional[str] = None):
+              var_sig: Optional[str] = None, vertical_array: Optional[np.array] = None):
     fig1, ax1 = open_plot()
     if xx is not None:
         ax1.plot(xx, arr)
     else:
         ax1.plot(arr)
+    if vertical_array is not None:
+        for vl in vertical_array:
+            plt.vlines(x=vl, ymin=np.nanmin(arr), ymax=np.nanmean(arr), color='r')
     if folder_plots is not None:
         if var_sig is None: var_sig = 'kk'
         save_plot(fig1, ax1, folder_plots, var_sig)
@@ -74,7 +77,7 @@ def easy_imshow(arr: np.array, folder_plots: Optional[Path] = None, var_sig: Opt
         save_plot(fig1, ax1, folder_plots, var_sig)
 
 
-def get_pvalues(a, b, ax, pos: float = 0, height: float = 0.13, ind: bool = True):
+def get_pvalues(a:np.array, b:np.array, ax, pos: float = 0, height: float = 0.13, ind: bool = True):
     if ind:
         _, p_value = stats.ttest_ind(a[~np.isnan(a)], b[~np.isnan(b)])
     else:
@@ -83,10 +86,22 @@ def get_pvalues(a, b, ax, pos: float = 0, height: float = 0.13, ind: bool = True
     ax.text(pos + pos * 0.1, height - height / 3, "p = %0.2E" % p_value)
 
 
+def get_1s_pvalues(a:np.array, b: float, ax, pos: float = 0, height: float = 0.13):
+    _, p_value = stats.ttest_1samp(a[~np.isnan(a)], b)
+    ax.text(pos, height, calc_pvalue(p_value))
+    ax.text(pos + pos * 0.1, height - height / 3, "p = %0.2E" % p_value)
+
+
+def get_anova_pvalues(a:np.array, b: np.array, axis: int, ax, pos: float = 0, height: float = 0.13):
+    _, p_value = stats.f_oneway(a, b, axis=axis)
+    ax.text(pos, height, calc_pvalue(p_value))
+    ax.text(pos + pos * 0.1, height - height / 3, "p = %0.2E" % p_value)
+
+
 def get_reg_pvalues(arr: np.array, x: np.array, ax, pos: float = 0, height: float = 0.13):
     _, _, _, p_value, _ = stats.linregress(x[~np.isnan(arr)], arr[~np.isnan(arr)])
     ax.text(pos, height, calc_pvalue(p_value))
-    ax.text(pos + pos * 0.1, height - height / 3, "p = %0.2E" % p_value)
+    ax.text(pos + pos * 0.1, 0.9*height, "p = %0.2E" % p_value)
 
 
 def calc_pvalue(p_value: float) -> str:
@@ -124,3 +139,12 @@ def flatten_array(array_data: np.array) -> Tuple[np.array, np.array]:
     rows, cols = array_data.shape
     x = np.tile(np.arange(cols), rows)
     return x, arr_1d
+
+
+def scale_array(arr: np.array, upper_val: int = 255, lower_val: int = 0) -> np.array:
+    """ function to scale an array from lower_val to upper_val """
+    min_value = arr.min()
+    max_value = arr.max()
+
+    scaled_matrix = (arr - min_value) / (max_value - min_value) * (upper_val - lower_val) + lower_val
+    return scaled_matrix

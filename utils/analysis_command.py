@@ -46,4 +46,12 @@ class AnalysisConfiguration:
     FA_n_iter: int = 100  # number of iterations to run the FA for different subset of neurons
     FA_VAF: float = 0.7  # minimum VAF for FA
     FA_components: int = 10  # number of components for FA
+    FA_event_frames: float = 30  # number of frames before stim/target to analyze data
+    FA_rew_frames: float = 0  # number of frames before and after stim/target to analyze data
+    FA_len_SOT: int = 100  # number of stims to consider for SOT averages
+    FA_late: int = 20  # time in minutes to consider "late" learning
+    FA_stim_win: int = 10  # number of stims to do the FA line
+
+    eng_stim_win: int = 10  # number of stims to do the engagement line
+    eng_event_frames: float = 30  # number of frames before stim/target to analyze data
 

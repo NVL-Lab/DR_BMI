@@ -28,6 +28,9 @@ from utils.analysis_constants import AnalysisConstants
 from utils import util_plots as ut_plots
 from analysis import learning_analysis
 import analysis.dynamics_mat as dm
+from analysis import dynamics_analysis as da
+from analysis import dynamics_population as dp
+
 
 interactive(True)
 
@@ -206,4 +209,23 @@ spks_dn_av = ut.sum_array_samples(np.reshape(spks_dn, (spks_dn.shape[0], np.prod
 spks_in_av = ut.sum_array_samples(np.reshape(spks_in, (spks_in.shape[0], np.prod(spks_in.shape[1:]))), 1, 3)
 
 
+
+folder_processed_experiment = Path('D:/data/process/m18/221118/D07')
+folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+
+
+AnalysisConfiguration.FA_event_frames = 30
+AnalysisConfiguration.FA_rew_frames = 0
+df_long = dp.obtain_SOT(folder_list)
+df_long_line = dp.obtain_SOT_line(folder_list)
+
+AnalysisConfiguration.FA_rew_frames = 0
+AnalysisConfiguration.eng_event_frames = 15
+df_rcv_short = dp.obtain_engagement(folder_list)
+
+AnalysisConfiguration.eng_event_frames = 30
+df_rcv = dp.obtain_engagement(folder_list)
+
+AnalysisConfiguration.eng_event_frames = 60
+df_rcv_long = dp.obtain_engagement(folder_list)
 

@@ -14,6 +14,7 @@ from typing import Tuple
 from scipy import signal
 
 import utils.util_plots as ut_plots
+import utils.utils_analysis as ut
 from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 from preprocess import sessions as ss
@@ -48,12 +49,12 @@ def obtain_bad_frames_from_fneu(fneu_old: np.array) -> Tuple[np.array, np.array,
     bad_frames_index.sort()
     frames_include = np.where(F_denoised == 0)[0]
     bad_frames_bool = F_denoised.astype(bool)
-    stim_time, stim_time_bool = obtain_stim_time(bad_frames_bool)
-    if np.sum(stim_time<AnalysisConstants.calibration_frames) > 0:
+    stim_index, stim_time_bool = obtain_stim_time(bad_frames_bool)
+    if np.sum(stim_index<AnalysisConstants.calibration_frames) > 0:
         sanity_check = True
     else:
         sanity_check = False
-    return bad_frames_index, bad_frames_bool, frames_include, stim_time, stim_time_bool, sanity_check
+    return bad_frames_index, bad_frames_bool, frames_include, stim_index, stim_time_bool, sanity_check
 
 
 def prepare_ops_1st_pass(default_path: Path, ops_path: Path) -> dict:
@@ -129,9 +130,9 @@ def obtain_dffs(folder_suite2p: Path, smooth: bool = True) -> np.array:
 
 def obtain_stim_time(bad_frames_bool: np.array) -> Tuple[np.array, np.array]:
     """ function that reports the time of stim (by returning the first frame of each stim) """
-    stim_time = np.insert(np.diff(bad_frames_bool.astype(int)), 0, 0)
-    stim_time[stim_time < 1] = 0
-    return np.where(stim_time)[0], stim_time.astype(bool)
+    stim_index = np.insert(np.diff(bad_frames_bool.astype(int)), 0, 0)
+    stim_index[stim_index < 1] = 0
+    return np.where(stim_index)[0], stim_index.astype(bool)
 
 
 def refine_classifier(folder_suite2p: Path, dn_bool: bool = True):
@@ -154,55 +155,142 @@ def refine_classifier(folder_suite2p: Path, dn_bool: bool = True):
     np.save(Path(folder_suite2p) / "iscell.npy", is_cell_new)
 
 
-def sanity_checks(folder_suite2p: Path, folder_fneu_old: Path, folder_process_plots: Path, stim_flag: bool = True) -> list:
+def sanity_checks(folder_suite2p: Path, folder_fneu_old: Path, file_path: Path, folder_process_plots: Path,
+                  stim_flag: bool = True, save_flag: bool = False) -> list:
     """ function to check the post_process """
     check_session = []
     # obtain the bad frames and stims
+
     if stim_flag:
-        fneu_old = np.load(Path(folder_fneu_old) / "Fneu.npy")
-        bad_frames_index, bad_frames_bool, _, stim_time, stim_time_bool, sanity_bad_frames = \
-            obtain_bad_frames_from_fneu(fneu_old)
-        ut_plots.easy_plot(np.nanmean(fneu_old, 0), folder_plots=folder_process_plots, var_sig='fneu_mean')
+        bmi_online = sio.loadmat(str(file_path), simplify_cells=True)
+        total_stims = bmi_online['data']['selfTarget_DR_stim_Counter'] + bmi_online['data']['sched_random_stim']
+        if save_flag:
+            fneu_old = np.load(Path(folder_fneu_old) / "Fneu.npy")
+            bad_frames_index, bad_frames_bool, _, stim_index, stim_bool, sanity_bad_frames = \
+                obtain_bad_frames_from_fneu(fneu_old)
+            ut_plots.easy_plot(np.nanmean(fneu_old, 0), folder_plots=folder_process_plots, var_sig='fneu_mean',
+                               vertical_array=stim_index)
+            bad_frames_dict = {'bad_frames_index': bad_frames_index, 'bad_frames_bool': bad_frames_bool}
+            stim_time_dict = {'stim_index': stim_index, 'stim_bool': stim_bool}
+            np.save(Path(folder_suite2p) / "bad_frames_dict.npy", bad_frames_dict, allow_pickle=True)
+            np.save(Path(folder_suite2p) / "stim_time_dict.npy", stim_time_dict, allow_pickle=True)
+        else:
+            stim_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
+            stim_time_dict = stim_aux.take(0)
+            stim_index = stim_time_dict['stim_index']
+            sanity_bad_frames = np.sum(stim_index < AnalysisConstants.calibration_frames) > 0
+
         if sanity_bad_frames:
             check_session.append('bad_frames')
-        bad_frames_dict = {'bad_frames_index': bad_frames_index, 'bad_frames_bool': bad_frames_bool}
-        stim_time_dict = {'stim_time': stim_time, 'stim_time_bool': stim_time_bool}
-        np.save(Path(folder_suite2p) / "bad_frames_dict.npy", bad_frames_dict, allow_pickle=True)
-        np.save(Path(folder_suite2p) / "stim_time_dict.npy", stim_time_dict, allow_pickle=True)
+        elif np.sum(np.diff(stim_index) < 40) > 0:
+            check_session.append('redundance')
+        elif total_stims != len(stim_index):
+            check_session.append('total_stims')
+    else:
+        if save_flag:
+            fneu_old = np.load(Path(folder_suite2p) / "Fneu.npy")
+            ut_plots.easy_plot(np.nanmean(fneu_old, 0), folder_plots=folder_process_plots, var_sig='fneu_mean')
 
     # obtain the position of the neurons and plot it
-    ops_after = np.load(Path(folder_suite2p) / "ops.npy", allow_pickle=True)
-    ops_after = ops_after.take(0)
-    neurons = np.load(Path(folder_suite2p) / "stat.npy", allow_pickle=True)
-    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
-    direct_neurons = aux_dn.take(0)
-    ensemble = direct_neurons['E1'] + direct_neurons['E2']
-    is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
+    if save_flag:
+        ops_after = np.load(Path(folder_suite2p) / "ops.npy", allow_pickle=True)
+        ops_after = ops_after.take(0)
+        neurons = np.load(Path(folder_suite2p) / "stat.npy", allow_pickle=True)
+        aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+        direct_neurons = aux_dn.take(0)
+        ensemble = direct_neurons['E1'] + direct_neurons['E2']
+        is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
 
-    G = ops_after["meanImg"]
-    R = np.zeros((512, 512))
-    B = np.zeros((512, 512))
-    Rbad = np.zeros((512, 512))
-    Bbad = np.zeros((512, 512))
-    for nn, neuron in enumerate(neurons):
-        if bool(is_cell[nn, 0]):
-            if nn in ensemble:
-                for pix in np.arange(neuron["xpix"].shape[0]):
-                    B[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
+        G = ops_after["meanImg"]
+        R = np.zeros((512, 512))
+        B = np.zeros((512, 512))
+        Rbad = np.zeros((512, 512))
+        Bbad = np.zeros((512, 512))
+        for nn, neuron in enumerate(neurons):
+            if bool(is_cell[nn, 0]):
+                if nn in ensemble:
+                    for pix in np.arange(neuron["xpix"].shape[0]):
+                        B[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
+                else:
+                    for pix in np.arange(neuron["xpix"].shape[0]):
+                        R[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
             else:
+                Bbad[int(neuron["med"][0]), int(neuron["med"][1])] = 1
                 for pix in np.arange(neuron["xpix"].shape[0]):
-                    R[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
-        else:
-            Bbad[int(neuron["med"][0]), int(neuron["med"][1])] = 1
-            for pix in np.arange(neuron["xpix"].shape[0]):
-                Rbad[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
+                    Rbad[neuron["ypix"][pix], neuron["xpix"][pix]] = 1
 
-    RGB = np.stack((R * 255, G / G.max() * 255, B * 255), axis=2)
-    RGBbad = np.stack((Rbad * 255, G / G.max() * 255, Bbad * 255), axis=2)
-    ut_plots.easy_imshow(RGB, folder_process_plots, 'neurons_location')
-    ut_plots.easy_imshow(RGBbad, folder_plots=folder_process_plots, var_sig='bad_neurons_location')
+        RGB = np.stack((R, ut_plots.scale_array(G)/100, B), axis=2)
+        RGBbad = np.stack((Rbad, ut_plots.scale_array(G)/100, Bbad), axis=2)
+        ut_plots.easy_imshow(RGB, folder_process_plots, 'neurons_location')
+        ut_plots.easy_imshow(RGBbad, folder_plots=folder_process_plots, var_sig='bad_neurons_location')
 
     return check_session
+
+
+def double_check(folder_list: list, sessions_to_double_check):
+    """ function to iterate over bad sessions """
+    for session in sessions_to_double_check:
+        mouse, _, _ = session[0].split('/')
+        folder_path = Path(folder_list[ss.find_folder_path(mouse)]) / 'process' / session[0]
+        folder_suite2p = folder_path / 'suite2p' / 'plane0'
+        folder_fneu_old = folder_path / 'suite2p' / 'fneu_old'
+        folder_process_plots = folder_path / 'suite2p' / 'plots'
+        fneu_old = np.load(Path(folder_fneu_old) / "Fneu.npy")
+        stim_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
+        stim_time_dict = stim_aux.take(0)
+        stim_index = stim_time_dict['stim_index']
+        stim_bool = stim_time_dict['stim_bool']
+
+        stim_index = stim_index[stim_index > 27000]
+        stim_bool[stim_bool < 27000] = 0
+        if np.sum(np.diff(stim_index)<40) > 0:
+            print('this was it')
+            stim_index = ut.remove_redundant(stim_index, 40)
+
+        ut_plots.easy_plot(np.nanmean(fneu_old, 0), folder_plots=folder_process_plots, var_sig='fneu_mean',
+                           vertical_array=stim_index)
+        stim_time_dict = {'stim_index': stim_index, 'stim_bool': stim_bool}
+        np.save(Path(folder_suite2p) / "stim_time_dict.npy", stim_time_dict, allow_pickle=True)
+
+
+def find_random_stims(folder_suite2p: Path, file_path: Path) -> np.array:
+    """ function to find stims from random """
+
+    bmi_online = sio.loadmat(str(file_path), simplify_cells=True)
+    stim_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
+    stim_time_dict = stim_aux.take(0)
+    stim_index = stim_time_dict['stim_index']
+
+    stim_online = np.where(bmi_online['data']['randomDRstim'].astype(bool))[0]
+    target_online = np.where(bmi_online['data']['selfHits'].astype(bool))[0]
+    if len(stim_online) != len(stim_index):
+        raise ValueError ('Check the stims are well identified, spot difference online / post process')
+    closest_indexes, differences = ut.find_closest(stim_online, target_online)
+    target_index = np.zeros(target_online.shape[0], dtype=int)
+    for tt in np.arange(target_online.shape[0]):
+        target_index[tt] = stim_index[closest_indexes[tt]] + differences[tt]
+    return target_index
+
+
+def save_targets(experiment_type, file_path, folder_suite2p):
+    """ function to save the target_dict"""
+    stim_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
+    stim_time_dict = stim_aux.take(0)
+    stim_index = stim_time_dict['stim_index']
+    stim_bool = stim_time_dict['stim_bool']
+    if experiment_type in ['D1act', 'CONTROL_LIGHT', 'NO_AUDIO']:
+        target_index = stim_index
+    elif experiment_type == 'DELAY':
+        target_index = stim_index - int(np.round(AnalysisConstants.framerate))
+    elif experiment_type == 'RANDOM':
+        target_index = find_random_stims(folder_suite2p, file_path)
+    else:
+        return
+    target_bool = np.zeros(stim_bool.shape[0], dtype=bool)
+    target_bool[target_index] = 1
+    target_dict = {'target_index': target_index, 'target_bool': target_bool}
+    np.save(Path(folder_suite2p) / "target_time_dict.npy", target_dict, allow_pickle=True)
+    return
 
 
 def obtain_synchrony_stim(folder_suite2p: Path):
@@ -216,14 +304,20 @@ def create_time_locked_array(arr: np.array, stim_index: np.array, num_frames: tu
     """ function to create the time locked array of an initial array"""
 
     # Create an empty array to store the time-locked dff values
-    arr_time_locked = np.zeros((arr.shape[0], len(stim_index), np.sum(num_frames)))
+    if len(arr.shape) > 1:
+        arr_time_locked = np.zeros((arr.shape[0], len(stim_index), np.sum(num_frames)))
+    else:
+        arr_time_locked = np.zeros((len(stim_index), np.sum(num_frames)))
 
     # Iterate over each index in stim_time
     for ii, index in enumerate(stim_index):
         # Extract the corresponding frames from dff
         start_frame = index - num_frames[0]
         end_frame = index + num_frames[1]
-        arr_time_locked[:, ii, :] = arr[:, start_frame:end_frame]
+        if len(arr.shape) > 1:
+            arr_time_locked[:, ii, :] = arr[:, start_frame:end_frame]
+        else:
+            arr_time_locked[ii, :] = arr[start_frame:end_frame]
     return arr_time_locked
 
 
