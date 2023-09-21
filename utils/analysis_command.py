@@ -20,6 +20,7 @@ class AnalysisConfiguration:
 
     # general
     tol = 0.05  # tolerance at which the pvalues will be consider significant
+    snr_min = 2  # value of the min snr to take into account cells or sessions
 
     # plotting
     to_plot: bool = False
@@ -34,13 +35,16 @@ class AnalysisConfiguration:
     learning_baseline: int = 5  # time in min to consider as "baseline" during BMI to obtain gain
     learning_baseline_hits: int = 5  # number of hits to consider "baseline time"
 
+    # simulation
+    number_Ts: int = 102  # number of targets per simulation posthoc
+
     # filtering background calcium signal
     filter_size: int = 500  # in frames
 
     # time_locked
     time_lock_seconds: int = 3  # number of seconds before and after target to get info
 
-    # manifold
+    # dynamics
     FA_spks_av_win: int = 30  # number of samples to count spikes. 30 -> 1sec
     FA_n_neu: int = 50  # number of neurons for the FA
     FA_n_iter: int = 100  # number of iterations to run the FA for different subset of neurons

@@ -95,12 +95,14 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
     df_l = df[df.columns[:3]]
     for cc in df.columns[3:]:
         df_a[cc] = df[cc].apply(lambda x: np.nanmean(x))
-        df_e[cc] = df[cc].apply(lambda x: np.nanmean(x[:5]))
-        df_l[cc] = df[cc].apply(lambda x: np.nanmean(x[15:]))
+        df_e[cc] = df[cc].apply(lambda x: np.nanmean(x[:10]))
+        df_l[cc] = df[cc].apply(lambda x: np.nanmean(x[20:30]))
     df_a['period'] = 'all'
     df_e['period'] = 'early'
     df_l['period'] = 'late'
+    df_el = pd.concat((df_l[df_l.columns[[0, 2]]], df_l[df_l.columns[3:-1]]/df_e[df_e.columns[3:-1]]), axis=1)
     df_av = pd.concat((df_a, df_e, df_l))
+    # df_group = df_el.groupby(['mice', 'experiment']).mean().reset_index()
 
     df_time = df_a[df_a.experiment.isin(['D1act', 'CONTROL_LIGHT', 'DELAY', 'RANDOM'])]
     df_time = df_time.drop(['session_path', 'period'], axis=1)
@@ -116,7 +118,7 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
 
     df_group = df_time.groupby(['mice', 'experiment']).mean().reset_index()
 
-    for cc in df_time.filter(like='SOT'):
+    for cc in df_group.filter(like='r2'):
         fig2, ax2 = ut_plots.open_plot()
         sns.boxplot(data=df_group, x='experiment', y=cc, order=['D1act', 'CONTROL_LIGHT', 'DELAY', 'RANDOM'], ax=ax2)
         sns.stripplot(data=df_group, x="experiment", y=cc, hue='mice',

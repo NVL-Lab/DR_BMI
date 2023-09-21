@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import Optional
+import scipy.io as sio
 
 import preprocess.prepare_data as pp
 from suite2p.run_s2p import run_s2p
@@ -219,3 +220,16 @@ def obtain_snr(folder_list: list) -> pd.DataFrame:
             ret['snr_dn'].append(snr_dn)
             ret['snr_dn_min'].append(snr_dn_min)
     return pd.DataFrame(ret)
+
+
+def create_direct_neurons_mat(folder_list: list):
+    """ Function to open the direct_neurons dict and create a mat out of them """
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_processed_experiment = Path(folder_process) / row['session_path']
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+            direct_neurons_aux = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+            direct_neurons = direct_neurons_aux.take(0)
+            sio.savemat(folder_suite2p / 'direct_neurons.mat', direct_neurons)

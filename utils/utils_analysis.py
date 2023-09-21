@@ -128,3 +128,15 @@ def find_closest(arr_orig: np.array, arr_syn: np.array) -> Tuple[np.array, np.ar
     closest_indexes = np.array(closest_indexes)
     differences = np.array(differences)
     return closest_indexes, differences
+
+
+def snr_neuron(folder_suite2p: Path) -> float:
+    """ function to find snr of a cell """
+    Fneu = np.load(Path(folder_suite2p) / "Fneu.npy")
+    F_raw = np.load(Path(folder_suite2p) / "F.npy")
+    power_signal_all = np.nanmean(np.square(F_raw), 1)
+    power_noise_all = np.nanmean(np.square(Fneu), 1)
+
+    # Calculate the SNR
+    snr = 10 * np.log10(power_signal_all / power_noise_all)
+    return snr

@@ -140,9 +140,11 @@ def refine_classifier(folder_suite2p: Path, dn_bool: bool = True):
     neurons = np.load(Path(folder_suite2p) / "stat.npy", allow_pickle=True)
     is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
     is_cell_new = copy.deepcopy(is_cell)
+    snr_val = ut.snr_neuron(folder_suite2p)
     for nn, neuron in enumerate(neurons):
         if neuron['skew'] > 10 or neuron['skew'] < 0.4 or neuron['compact'] > 1.4 or \
-                neuron['footprint'] == 0 or neuron['footprint'] == 3 or neuron['npix'] < 80:
+                neuron['footprint'] == 0 or neuron['footprint'] == 3 or neuron['npix'] < 80 or \
+                snr_val[nn] < AnalysisConfiguration.snr_min:
             is_cell_new[nn, :] = [0, 0]
     if dn_bool:
         aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
@@ -151,7 +153,6 @@ def refine_classifier(folder_suite2p: Path, dn_bool: bool = True):
         direct_neurons.sort()
         for dn in direct_neurons:
             is_cell_new[dn, :] = [1, 1]
-    np.save(Path(folder_suite2p) / "iscell_old.npy", is_cell)
     np.save(Path(folder_suite2p) / "iscell.npy", is_cell_new)
 
 

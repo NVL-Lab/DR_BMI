@@ -1,10 +1,13 @@
 
 __author__ = 'Nuria'
 
+import copy
 import numpy as np
 import scipy.io as sio
 from scipy.stats import binned_statistic
+from pathlib import Path
 
+import preprocess.prepare_data as pp
 from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 
@@ -47,3 +50,6 @@ def gain_self_stim(file_path: str, time_or_hit: str = 'time') -> [float, float, 
         hit_array = np.nan
         time_to_hit = np.nan
     return BMI_hits, BMI_gain, baseline_hits, hit_array, time_to_hit/AnalysisConstants.framerate
+
+
+

@@ -71,6 +71,7 @@ def obtain_SOT_over_time(folder_suite2p: Path, spks_win: int = 1, tos: str = 'st
     ensemble = direct_neurons['E1'] + direct_neurons['E2']
     indirect_neurons = copy.deepcopy(is_cell)
     indirect_neurons[ensemble, :] = [0, 0]
+    indirect_neurons[direct_neurons['exclude'], :] = [0, 0]
     indices = indices[np.where(np.logical_and(np.logical_and(indices +
                                                              AnalysisConfiguration.FA_rew_frames < spks_dff.shape[1],
                                                              indices > AnalysisConfiguration.FA_event_frames),
@@ -101,6 +102,7 @@ def obtain_SOT_over_time_line(folder_suite2p: Path, tos: str = 'stim') -> Tuple[
     ensemble = direct_neurons['E1'] + direct_neurons['E2']
     indirect_neurons = copy.deepcopy(is_cell)
     indirect_neurons[ensemble, :] = [0, 0]
+    indirect_neurons[direct_neurons['exclude'], :] = [0, 0]
     indices = indices[np.where(np.logical_and(np.logical_and(indices +
                                                              AnalysisConfiguration.FA_rew_frames < spks_dff.shape[1],
                                                              indices > AnalysisConfiguration.FA_event_frames),
@@ -130,6 +132,7 @@ def obtain_SOT_EL(folder_suite2p: Path, spks_win: int = 1, tos: str = 'stim') \
     ensemble = direct_neurons['E1'] + direct_neurons['E2']
     indirect_neurons = copy.deepcopy(is_cell)
     indirect_neurons[ensemble, :] = [0, 0]
+    indirect_neurons[direct_neurons['exclude'], :] = [0, 0]
     indices = indices[np.where(indices + AnalysisConfiguration.FA_event_frames < spks_dff.shape[1])[0]]
     frames_win = int(AnalysisConfiguration.learning_baseline * 60 * AnalysisConstants.framerate)
     frames_late = int(AnalysisConstants.calibration_frames +
@@ -225,6 +228,7 @@ def obtain_engagement(folder_suite2p: Path, tos: str = 'stim'):
     ensemble = direct_neurons['E1'] + direct_neurons['E2']
     indirect_neurons = copy.deepcopy(is_cell)
     indirect_neurons[ensemble, :] = [0, 0]
+    indirect_neurons[direct_neurons['exclude'], :] = [0, 0]
     indices = indices[np.where(np.logical_and(np.logical_and(indices +
                                                              AnalysisConfiguration.FA_rew_frames < dff.shape[1],
                                                              indices > AnalysisConfiguration.eng_event_frames),

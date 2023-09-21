@@ -210,22 +210,17 @@ spks_in_av = ut.sum_array_samples(np.reshape(spks_in, (spks_in.shape[0], np.prod
 
 
 
-folder_processed_experiment = Path('D:/data/process/m18/221118/D07')
-folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+folder_suite2p = Path('F:/data/process/m22/230416/D05') / 'suite2p' / 'plane0'
 
 
 AnalysisConfiguration.FA_event_frames = 30
 AnalysisConfiguration.FA_rew_frames = 0
-df_long = dp.obtain_SOT(folder_list)
-df_long_line = dp.obtain_SOT_line(folder_list)
-
-AnalysisConfiguration.FA_rew_frames = 0
-AnalysisConfiguration.eng_event_frames = 15
-df_rcv_short = dp.obtain_engagement(folder_list)
+df_SOT = dp.obtain_SOT(folder_list)
+df_SOT_line = dp.obtain_SOT_line(folder_list)
 
 AnalysisConfiguration.eng_event_frames = 30
 df_rcv = dp.obtain_engagement(folder_list)
 
-AnalysisConfiguration.eng_event_frames = 60
-df_rcv_long = dp.obtain_engagement(folder_list)
+
+
 

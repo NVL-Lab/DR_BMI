@@ -12,6 +12,7 @@ import numpy as np
 from pathlib import Path
 
 from utils.analysis_constants import AnalysisConstants
+from utils.analysis_command import AnalysisConfiguration
 
 __author__ = 'Nuria'
 
@@ -668,6 +669,58 @@ def get_simulations_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
                     ret['mask_data'].append(file_name)
                 elif file_name[:10] == 'target_cal':
                     ret['target_calibration'].append(file_name)
+    return pd.DataFrame(ret)
+
+
+def get_simulations_posthoc_df(folder_list: list, experiment_type: str) -> pd.DataFrame:
+    """ Function to retrieve the name of the simulations that will be used depending on the experiment type
+    and the files that are useful for that experiment, baselines, bmis, behaviors, etc"""
+    if experiment_type == 'D1act':
+        dict_items = _D1act.items()
+    elif experiment_type == 'CONTROL':
+        dict_items = _CONTROL.items()
+    elif experiment_type == 'CONTROL_LIGHT':
+        dict_items = _CONTROL_LIGHT.items()
+    elif experiment_type == 'CONTROL_AGO':
+        dict_items = _CONTROL_AGO.items()
+    elif experiment_type == 'RANDOM':
+        dict_items = _RANDOM.items()
+    elif experiment_type == 'NO_AUDIO':
+        dict_items = _NO_AUDIO.items()
+    elif experiment_type == 'DELAY':
+        dict_items = _DELAY.items()
+    else:
+        raise ValueError(
+            f'Could not find any controls for {experiment_type} '
+            f'try D1act, CONTROL, CONTROL_LIGHT, CONTROL_AGO, RANDOM, NO_AUDIO, DELAY')
+    ret = collections.defaultdict(list)
+    t_strings = []
+    for i in range(1, AnalysisConfiguration.number_Ts+1):
+        t_strings.append(f'T{i}')
+    for mouse, sessions_per_type in dict_items:
+        for day_index, session_path in enumerate(sessions_per_type):
+            [mouse, _, _] = session_path.split('/')
+            folder_process = Path(folder_list[find_folder_path(mouse)]) / 'process'
+            dir_files = Path(folder_process) / session_path / 'simulation_posthoc'
+            list_files = os.listdir(dir_files)
+            for T in t_strings:
+                ret['mice_name'].append(mouse)
+                ret['experiment_type'].append(experiment_type)
+                ret['session_path'].append(session_path)
+                ret['T'].append(T)
+                file_name_Ts = [s for s in list_files if '_' + T + '.' in s]
+                if len(file_name_Ts) == 0:
+                    ret['Simulation'].append('')
+                    ret['BMI_target'].append('')
+                    ret['target_calibration'].append('')
+                else:
+                    for file_name in file_name_Ts:
+                        if file_name[:14] == 'simulated_data':
+                            ret['Simulation'].append(file_name)
+                        elif file_name[:10] == 'BMI_target':
+                            ret['BMI_target'].append(file_name)
+                        elif file_name[:10] == 'target_cal':
+                            ret['target_calibration'].append(file_name)
     return pd.DataFrame(ret)
 
 

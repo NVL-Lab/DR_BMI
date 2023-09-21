@@ -9,6 +9,7 @@ import numpy as np
 from pathlib import Path
 
 from preprocess import sessions as ss
+from utils.analysis_command import AnalysisConfiguration
 from utils.analysis_constants import AnalysisConstants
 from utils.utils_analysis import harmonic_mean, geometric_mean
 from analysis import learning_analysis
@@ -37,6 +38,32 @@ def obtain_gain(folder_list: list, time_or_hit: str = 'time') -> pd.DataFrame:
                 ret['hits_per_min'].append(bmi_hits)
                 ret['hit_array'].append(hit_array)
                 ret['time_to_hit'].append(time_to_hit)
+    return pd.DataFrame(ret)
+
+
+def obtain_gain_posthoc(folder_list: list, time_or_hit: str = 'time') -> pd.DataFrame:
+    """ function to obtain gain for all experiments """
+    ret = collections.defaultdict(list)
+    for experiment_type in AnalysisConstants.experiment_types:
+        df_sessions = ss.get_simulations_posthoc_df(folder_list, experiment_type)
+        mice = df_sessions.mice_name.unique()
+        for aa, mouse in enumerate(mice):
+            df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
+            folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
+            for index, row in df_sessions_mouse.iterrows():
+                folder_path = folder_process / row['session_path'] / 'simulation_posthoc'
+                ret['mice'].append(mouse)
+                ret['session_path'].append(row['session_path'])
+                ret['experiment'].append(experiment_type)
+                ret['T'].append(row['T'])
+                if len(row['Simulation'])>0:
+                    bmi_hits, bmi_gain, _, _, _ = \
+                        learning_analysis.gain_self_stim(folder_path / row['Simulation'], time_or_hit)
+                    ret['gain'].append(bmi_gain)
+                    ret['hits_per_min'].append(bmi_hits)
+                else:
+                    ret['gain'].append(np.nan)
+                    ret['hits_per_min'].append(np.nan)
     return pd.DataFrame(ret)
 
 
