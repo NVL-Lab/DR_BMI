@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from scipy import stats
 from scipy.stats.mstats import gmean, hmean
+from scipy.signal import butter, lfilter
 
 
 def increase_percent(a: float, b: float) -> float:
@@ -54,7 +55,7 @@ def align_arrays(arr_list: list, min_length: int) -> list:
                                                                   constant_values=np.nan) for arr in arr_list]
 
 
-def unfold_arrays(row, column1:str, column2:str):
+def unfold_arrays(row, column1: str, column2: str):
     """ function to unfold the columns given"""
     unfolded_rows = []
     for i in range(len(row['averages'])):
@@ -92,7 +93,7 @@ def remove_redundant(arr: np.array, min_dist: int = 40) -> np.array:
     """ function to remove iteratively redundant events """
     bad = np.arange(1, arr.shape[0])[np.diff(arr) < min_dist]
     finish = arr.shape[0]
-    while len(bad) > 0 or finish==0:
+    while len(bad) > 0 or finish == 0:
         arr = np.delete(arr, bad[0])
         bad = np.arange(1, arr.shape[0])[np.diff(arr) < min_dist]
         finish -= 1
@@ -130,7 +131,7 @@ def find_closest(arr_orig: np.array, arr_syn: np.array) -> Tuple[np.array, np.ar
     return closest_indexes, differences
 
 
-def snr_neuron(folder_suite2p: Path) -> float:
+def snr_neuron(folder_suite2p: Path) -> np.array:
     """ function to find snr of a cell """
     Fneu = np.load(Path(folder_suite2p) / "Fneu.npy")
     F_raw = np.load(Path(folder_suite2p) / "F.npy")
@@ -140,3 +141,46 @@ def snr_neuron(folder_suite2p: Path) -> float:
     # Calculate the SNR
     snr = 10 * np.log10(power_signal_all / power_noise_all)
     return snr
+
+
+def stability_neuron(folder_suite2p: Path, init: int = 0, end: Optional[int] = None) -> np.array:
+    """ function to obtain the stability of all the neurons in F_raw given by changes on mean and low_pass std"""
+    F_raw = np.load(Path(folder_suite2p) / "F.npy")
+    if end is None:
+        end = F_raw.shape[1]
+    try:
+        bad_frames_dict = np.load(folder_suite2p / "bad_frames_dict.npy", allow_pickle=True).take(0)
+        bad_frames_bool = bad_frames_dict['bad_frames_bool'][init:end]
+    except FileNotFoundError:
+        bad_frames_bool = np.zeros(F_raw.shape[1], dtype=bool)[init:end]
+    F_to_analyze = F_raw[:, init:end]
+    F_to_analyze = F_to_analyze[:, ~bad_frames_bool]
+    arr_stab = np.zeros(F_to_analyze.shape[0], dtype=bool)
+    for i in np.arange(F_to_analyze.shape[0]):
+        arr_stab[i] = check_arr_stability(F_to_analyze[i, :]) and low_pass_arr(F_to_analyze[i, :])
+    return arr_stab
+
+
+def check_arr_stability(arr: np.array, num_samp: int = 10000, threshold: float = 0.2) -> bool:
+    """ function to check the stability of a neuron"""
+    if len(arr) < num_samp:
+        return True  # Not enough data points to calculate stability.
+    indices = np.arange(0, len(arr), num_samp/2, dtype=int)
+    mean_arr = np.zeros(len(indices) - 2)
+    for i, index in enumerate(indices[1:-1]):
+        mean_arr[i] = np.mean(arr[index-int(num_samp/2):index+int(num_samp/2)])
+    mean_max = np.max([mean_arr.mean() * (1 + threshold), mean_arr.mean()+2])
+    mean_min = np.min([mean_arr.mean() * (1 - threshold), mean_arr.mean()-2])
+    stability = np.sum(mean_arr > mean_max) + np.sum(mean_arr < mean_min)
+    if stability > 0:
+        return False
+    else:
+        return True
+
+
+def low_pass_arr(arr: np.array, order: int = 2, cutoff_frequency: float = 0.01, fs: float = 30, low_pass_std: float = 1):
+    """ function to check the std of the low_pass filtered signal"""
+    b, a = butter(order, cutoff_frequency / (0.5 * fs), btype='low', analog=False)
+    # Apply the filter to the signal
+    filtered_signal = lfilter(b, a, arr)
+    return np.std(filtered_signal[int(1/cutoff_frequency*fs):]) < low_pass_std

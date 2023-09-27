@@ -151,13 +151,13 @@ def run_refines(folder_list: list, behav_bool: bool = False):
         df = ss.get_sessions_df(folder_list, experiment_type)
 
         for index, row in df.iterrows():
-            if row['mice_name'] not in ['m13', 'm15', 'm16', 'm18']:
-                folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
-                folder_path = folder_process / row['session_path']
-                if behav_bool:
-                    folder_path = folder_path / 'behavior'
-                folder_suite2p = folder_path / 'suite2p' / 'plane0'
-                pp.refine_classifier(folder_suite2p, dn_bool=not behav_bool)
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_path = folder_process / row['session_path']
+            if behav_bool:
+                folder_path = folder_path / 'behavior'
+            folder_suite2p = folder_path / 'suite2p' / 'plane0'
+            print('refining: ' + row['session_path'])
+            pp.refine_classifier(folder_suite2p, dn_bool=False)
 
 
 def run_sanity_checks(folder_list: list):
@@ -233,3 +233,18 @@ def create_direct_neurons_mat(folder_list: list):
             direct_neurons_aux = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
             direct_neurons = direct_neurons_aux.take(0)
             sio.savemat(folder_suite2p / 'direct_neurons.mat', direct_neurons)
+
+
+def create_bad_frames_mat(folder_list: list):
+    """ Function to open the bad_frames dict and create a mat out of them """
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_processed_experiment = Path(folder_process) / row['session_path']
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+            file_path = Path(folder_suite2p) / "bad_frames_dict.npy"
+            if os.path.exists(file_path):
+                bad_frames_aux = np.load(file_path, allow_pickle=True)
+                bad_frames = bad_frames_aux.take(0)
+                sio.savemat(folder_suite2p / 'bad_frames.mat', bad_frames)

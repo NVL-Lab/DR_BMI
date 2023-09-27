@@ -210,7 +210,7 @@ spks_in_av = ut.sum_array_samples(np.reshape(spks_in, (spks_in.shape[0], np.prod
 
 
 
-folder_suite2p = Path('F:/data/process/m22/230416/D05') / 'suite2p' / 'plane0'
+folder_suite2p = Path('D:/data/process/m16/221113/D02') / 'suite2p' / 'plane0'
 
 
 AnalysisConfiguration.FA_event_frames = 30

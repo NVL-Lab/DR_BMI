@@ -47,7 +47,7 @@ def obtain_gain_posthoc(folder_list: list, time_or_hit: str = 'time') -> pd.Data
     for experiment_type in AnalysisConstants.experiment_types:
         df_sessions = ss.get_simulations_posthoc_df(folder_list, experiment_type)
         mice = df_sessions.mice_name.unique()
-        for aa, mouse in enumerate(mice):
+        for mouse in mice:
             df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
             folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
             for index, row in df_sessions_mouse.iterrows():
