@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from scipy import stats
 from scipy.stats.mstats import gmean, hmean
-from scipy.signal import butter, lfilter
+from scipy.signal import butter, filtfilt
 
 
 def increase_percent(a: float, b: float) -> float:
@@ -143,7 +143,7 @@ def snr_neuron(folder_suite2p: Path) -> np.array:
     return snr
 
 
-def stability_neuron(folder_suite2p: Path, init: int = 0, end: Optional[int] = None) -> np.array:
+def stability_neuron(folder_suite2p: Path, init: int = 0, end: Optional[int] = None, low_pass_std: float = 1) -> np.array:
     """ function to obtain the stability of all the neurons in F_raw given by changes on mean and low_pass std"""
     F_raw = np.load(Path(folder_suite2p) / "F.npy")
     if end is None:
@@ -157,7 +157,8 @@ def stability_neuron(folder_suite2p: Path, init: int = 0, end: Optional[int] = N
     F_to_analyze = F_to_analyze[:, ~bad_frames_bool]
     arr_stab = np.zeros(F_to_analyze.shape[0], dtype=bool)
     for i in np.arange(F_to_analyze.shape[0]):
-        arr_stab[i] = check_arr_stability(F_to_analyze[i, :]) and low_pass_arr(F_to_analyze[i, :])
+        arr_stab[i] = check_arr_stability(F_to_analyze[i, :]) and \
+                      np.std(low_pass_arr(F_to_analyze[i, :])) < low_pass_std
     return arr_stab
 
 
@@ -178,9 +179,9 @@ def check_arr_stability(arr: np.array, num_samp: int = 10000, threshold: float =
         return True
 
 
-def low_pass_arr(arr: np.array, order: int = 2, cutoff_frequency: float = 0.01, fs: float = 30, low_pass_std: float = 1):
+def low_pass_arr(arr: np.array, order: int = 5, cutoff_frequency: float = 0.01, fs: float = 30):
     """ function to check the std of the low_pass filtered signal"""
     b, a = butter(order, cutoff_frequency / (0.5 * fs), btype='low', analog=False)
     # Apply the filter to the signal
-    filtered_signal = lfilter(b, a, arr)
-    return np.std(filtered_signal[int(1/cutoff_frequency*fs):]) < low_pass_std
+    filtered_signal = filtfilt(b, a, arr)
+    return filtered_signal

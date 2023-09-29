@@ -112,7 +112,7 @@ def save_neurons_post_process(folder_save: Path, exp_info: pd.Series, E1: list, 
     np.save(Path(folder_suite2p) / "direct_neurons.npy", direct_neurons, allow_pickle=True)
 
 
-def obtain_dffs(folder_suite2p: Path, smooth: bool = True) -> np.array:
+def obtain_dffs(folder_suite2p: Path, smooth: bool = True, filtered: bool = True) -> np.array:
     """ function to obtain the dffs based on F and Fneu """
     Fneu = np.load(Path(folder_suite2p) / "Fneu.npy")
     F_raw = np.load(Path(folder_suite2p) / "F.npy")
@@ -121,6 +121,8 @@ def obtain_dffs(folder_suite2p: Path, smooth: bool = True) -> np.array:
         if smooth:
             smooth_filt = np.ones(AnalysisConstants.dff_win) / AnalysisConstants.dff_win
             aux = np.convolve((F_raw[neuron, :] - Fneu[neuron, :]) / np.nanmean(Fneu[neuron, :]), smooth_filt, 'valid')
+            if filtered:
+                aux -= ut.low_pass_arr(aux, cutoff_frequency=0.001, order=2)
             # dff during BMI is calculate fromt the previous dff_win frames, so it is shifted as below
             dff[neuron, AnalysisConstants.dff_win - 1:] = aux
         else:

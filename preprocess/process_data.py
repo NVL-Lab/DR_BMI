@@ -107,7 +107,7 @@ def create_dff(folder_list: list):
             folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
             folder_processed_experiment = Path(folder_process) / row['session_path']
             folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
-            dff = pp.obtain_dffs(folder_suite2p)
+            dff = pp.obtain_dffs(folder_suite2p, filtered=True)
             np.save(folder_suite2p / 'dff.npy', dff)
 
 
