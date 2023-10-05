@@ -104,6 +104,7 @@ def create_dff(folder_list: list):
     for experiment_type in AnalysisConstants.experiment_types:
         df = ss.get_sessions_df(folder_list, experiment_type)
         for index, row in df.iterrows():
+            print('obtaining the dff for ' + row['session_path'])
             folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
             folder_processed_experiment = Path(folder_process) / row['session_path']
             folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
@@ -116,7 +117,7 @@ def create_spks_from_dff(folder_list: list, default_path):
     for experiment_type in AnalysisConstants.experiment_types:
         df = ss.get_sessions_df(folder_list, experiment_type)
         for index, row in df.iterrows():
-            print('creating the spks for ' + row['session_path'])
+            print('obtaining the spks for ' + row['session_path'])
             folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
             folder_processed_experiment = Path(folder_process) / row['session_path']
             folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'

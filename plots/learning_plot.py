@@ -300,6 +300,40 @@ def plot_hpm_vs_tth(df: pd.DataFrame, folder_plots: Path):
     ut_plots.save_plot(fig1, ax1, folder_plots, 'tth_vs_hpm', 'per_min', False)
 
 
+def learning_posthoc(df):
+    # df = pd.read_parquet(folder_data / 'df_learning_posthoc.parquet')
+    color_mapping = ut_plots.generate_palette_all_figures()
+    df = df.dropna()
+    df_T1 = df[df['T'] == 'T1']
+    df_rest = df[~df['T'].isin(['T1', 'T2'])]
+    df_rest = df_rest.drop(df_rest[df_rest.gain==0].index)
+    dd = df_T1.groupby(['mice', 'experiment']).apply(ut.geometric_mean, 'gain').reset_index()
+    ddrest = df_rest.groupby(['mice', 'experiment', 'session_path']).apply(ut.geometric_mean, 'gain').reset_index()
+    ddrest = ddrest.drop(['session_path'], axis=1)
+    ddrest = ddrest.groupby(['mice', 'experiment']).apply(ut.geometric_mean, 'gain').reset_index()
+    dd['T'] = 'T1'
+    ddrest['T'] = 'Trest'
+    ddboth = pd.concat((dd, ddrest))
+    fig1, ax1 = ut_plots.open_plot()
+    dd1act = ddboth[ddboth.experiment == 'D1act']
+    sns.lineplot(data=dd1act, x='T', y='gain', hue='mice', palette=color_mapping, ax=ax1)
+    sns.stripplot(data=dd1act, x='T', y='gain', hue='mice', palette=color_mapping, s=10,
+                  marker="D", jitter=False, ax=ax1)
+    a = dd1act[dd1act['T']=='T1'].gain
+    b = dd1act[dd1act['T']=='Trest'].gain
+    ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max())
+
+    fig2, ax2 = ut_plots.open_plot()
+    sns.boxplot(data=dd[dd.experiment.isin(['D1act', 'CONTROL'])], x='experiment',
+                y='gain', order=['D1act', 'CONTROL'],ax=ax2)
+    sns.stripplot(data=dd[dd.experiment.isin(['D1act', 'CONTROL'])], x='experiment',
+                  y='gain', hue='mice', order=['D1act', 'CONTROL'], palette=color_mapping, ax=ax2)
+    a = dd[dd['experiment']=='D1act'].gain
+    b = dd[dd['experiment']=='CONTROL'].gain
+    ax2.set_ylim([0.15, 3])
+    ut_plots.get_pvalues(a, b, ax2, pos=0.5, height=a[~np.isnan(a)].max())
+
+
 
 
 

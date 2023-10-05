@@ -83,7 +83,7 @@ def get_pvalues(a:np.array, b:np.array, ax, pos: float = 0, height: float = 0.13
     else:
         _, p_value = stats.ttest_rel(a, b)
     ax.text(pos, height, calc_pvalue(p_value))
-    ax.text(pos + pos * 0.1, height - height / 3, "p = %0.2E" % p_value)
+    ax.text(pos + pos * 0.1, height - height / 10, "p = %0.2E" % p_value)
 
 
 def get_1s_pvalues(a:np.array, b: float, ax, pos: float = 0, height: float = 0.13):

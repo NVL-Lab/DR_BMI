@@ -38,7 +38,7 @@ def obtain_manifold_spontaneous(folder_list: list) -> pd.DataFrame:
     return pd.DataFrame(ret)
 
 
-def obtain_SOT(folder_list: list) -> pd.DataFrame:
+def obtain_population_SOT(folder_list: list) -> pd.DataFrame:
     """ function to obtain SOT for all experiments with neurons x time """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.experiment_types:
@@ -50,7 +50,7 @@ def obtain_SOT(folder_list: list) -> pd.DataFrame:
                 folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
                 for index, row in df_sessions_mouse.iterrows():
                     print('SOT of ' + row['session_path'])
-                    folder_suite2p = Path(folder_process) / row['session_path']  / 'suite2p' / 'plane0'
+                    folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
                     ret['mice'].append(mouse)
                     ret['session_path'].append(row['session_path'])
                     ret['experiment'].append(experiment_type)
@@ -103,9 +103,23 @@ def obtain_SOT(folder_list: list) -> pd.DataFrame:
     return pd.DataFrame(ret)
 
 
-def obtain_SOT_early_late(folder_list: list) -> pd.DataFrame:
-    """ function to obtain SOT in early/late depending on temporal windows """
+def obtain_population_SOT_windows(folder_list: list, remove_target: bool = True) -> pd.DataFrame:
+    """ function to obtain SOT in early/late depending on temporal windows removing events """
     ret = collections.defaultdict(list)
+
+    windows = []
+
+    aux_w = np.arange(AnalysisConstants.calibration_frames, 0,
+                                       - int(AnalysisConfiguration.FA_time_win * AnalysisConstants.framerate * 60))[::-1]
+    for ww, win in enumerate(aux_w[1:]):
+        windows.append((aux_w[ww], win))
+    len_base_windows = len(windows)
+
+    aux_w = np.arange(AnalysisConstants.calibration_frames, AnalysisConfiguration.max_len_spks,
+                                  int(AnalysisConfiguration.FA_time_win * AnalysisConstants.framerate * 60))
+    for ww, win in enumerate(aux_w[1:]):
+        windows.append((aux_w[ww], win))
+
     for experiment_type in AnalysisConstants.experiment_types:
         if experiment_type not in ['CONTROL', 'CONTROL_AGO']:
             df_sessions = ss.get_sessions_df(folder_list, experiment_type)
@@ -114,33 +128,25 @@ def obtain_SOT_early_late(folder_list: list) -> pd.DataFrame:
                 df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
                 folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
                 for index, row in df_sessions_mouse.iterrows():
-                    print('SOT of ' + row['session_path'])
-                    folder_suite2p = Path(folder_process) / row['session_path']  / 'suite2p' / 'plane0'
-                    SOT_stim_dn_e, SOT_stim_in_e, SOT_stim_all_e, DIM_stim_all_e,\
-                    SOT_stim_dn_l, SOT_stim_in_l, SOT_stim_all_l, DIM_stim_all_l = \
-                        da.obtain_SOT_EL(folder_suite2p, tos='stim')
-                    ret['mice'].append(mouse)
-                    ret['session_path'].append(row['session_path'])
-                    ret['experiment'].append(experiment_type)
-                    ret['period'].append('early')
-                    ret['SOT_stim_dn'].append(SOT_stim_dn_e)
-                    ret['SOT_stim_in'].append(SOT_stim_in_e)
-                    ret['SOT_stim_all'].append(SOT_stim_all_e)
-                    ret['DIM_stim_all'].append(DIM_stim_all_e)
-
-                    ret['mice'].append(mouse)
-                    ret['session_path'].append(row['session_path'])
-                    ret['experiment'].append(experiment_type)
-                    ret['period'].append('late')
-                    ret['SOT_stim_dn'].append(SOT_stim_dn_l)
-                    ret['SOT_stim_in'].append(SOT_stim_in_l)
-                    ret['SOT_stim_all'].append(SOT_stim_all_l)
-                    ret['DIM_stim_all'].append(DIM_stim_all_l)
+                    print('SOT windows of ' + row['session_path'])
+                    folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
+                    for ww, win in enumerate(windows):
+                        SOT_dn, SOT_in = da.obtain_SOT_windows(folder_suite2p, win, remove_target=remove_target)
+                        ret['mice'].append(mouse)
+                        ret['session_path'].append(row['session_path'])
+                        ret['experiment'].append(experiment_type)
+                        ret['window'].append(ww)
+                        if ww < len_base_windows:
+                            ret['win_type'].append('calib')
+                        else:
+                            ret['win_type'].append('exp')
+                        ret['SOT_dn'].append(SOT_dn)
+                        ret['SOT_in'].append(SOT_in)
 
     return pd.DataFrame(ret)
 
 
-def obtain_SOT_line(folder_list: list) -> pd.DataFrame:
+def obtain_population_SOT_line(folder_list: list) -> pd.DataFrame:
     """ function to obtain SOT for all experiments with trials x time """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.experiment_types:
@@ -152,7 +158,7 @@ def obtain_SOT_line(folder_list: list) -> pd.DataFrame:
                 folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
                 for index, row in df_sessions_mouse.iterrows():
                     print('SOT of ' + row['session_path'])
-                    folder_suite2p = Path(folder_process) / row['session_path']  / 'suite2p' / 'plane0'
+                    folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
                     ret['mice'].append(mouse)
                     ret['session_path'].append(row['session_path'])
                     ret['experiment'].append(experiment_type)
@@ -184,7 +190,7 @@ def obtain_SOT_line(folder_list: list) -> pd.DataFrame:
     return pd.DataFrame(ret)
 
 
-def obtain_engagement(folder_list: list) -> pd.DataFrame:
+def obtain_population_engagement(folder_list: list, line_flag: bool = False) -> pd.DataFrame:
     """ function to obtain engagement of indirect neurons for all experiments with neurons x time """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.experiment_types:
@@ -196,11 +202,14 @@ def obtain_engagement(folder_list: list) -> pd.DataFrame:
                 folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
                 for index, row in df_sessions_mouse.iterrows():
                     print('eng of ' + row['session_path'])
-                    folder_suite2p = Path(folder_process) / row['session_path']  / 'suite2p' / 'plane0'
+                    folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
                     ret['mice'].append(mouse)
                     ret['session_path'].append(row['session_path'])
                     ret['experiment'].append(experiment_type)
-                    r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement(folder_suite2p, tos='stim')
+                    if line_flag:
+                        r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement_line(folder_suite2p, tos='stim')
+                    else:
+                        r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement_event(folder_suite2p, tos='stim')
                     r2_l_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     r2_l2_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     r2_rcv_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
@@ -214,7 +223,10 @@ def obtain_engagement(folder_list: list) -> pd.DataFrame:
                     ret['r2_l2_stim'].append(r2_l2_array)
                     ret['r2_rcv_stim'].append(r2_rcv_array)
                     ret['r2_dff_rcv_stim'].append(r2_dff_rcv_array)
-                    r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement(folder_suite2p, tos='target')
+                    if line_flag:
+                        r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement_line(folder_suite2p, tos='target')
+                    else:
+                        r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement_event(folder_suite2p, tos='target')
                     r2_l_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     r2_l2_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     r2_rcv_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
@@ -228,7 +240,10 @@ def obtain_engagement(folder_list: list) -> pd.DataFrame:
                     ret['r2_l2_target'].append(r2_l2_array)
                     ret['r2_rcv_target'].append(r2_rcv_array)
                     ret['r2_dff_rcv_target'].append(r2_dff_rcv_array)
-                    r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement(folder_suite2p, tos='calib')
+                    if line_flag:
+                        r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement_line(folder_suite2p, tos='calib')
+                    else:
+                        r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement_event(folder_suite2p, tos='calib')
                     r2_l_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     r2_l2_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     r2_rcv_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
@@ -242,5 +257,4 @@ def obtain_engagement(folder_list: list) -> pd.DataFrame:
                     ret['r2_l2_calib'].append(r2_l2_array)
                     ret['r2_rcv_calib'].append(r2_rcv_array)
                     ret['r2_dff_rcv_calib'].append(r2_dff_rcv_array)
-
     return pd.DataFrame(ret)

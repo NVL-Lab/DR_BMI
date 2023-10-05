@@ -215,12 +215,17 @@ folder_suite2p = Path('D:/data/process/m16/221113/D02') / 'suite2p' / 'plane0'
 
 AnalysisConfiguration.FA_event_frames = 30
 AnalysisConfiguration.FA_rew_frames = 0
-df_SOT = dp.obtain_SOT(folder_list)
-df_SOT_line = dp.obtain_SOT_line(folder_list)
+df_SOT_line = dp.obtain_population_SOT_line(folder_list)
+df_SOT = dp.obtain_population_SOT(folder_list)
+AnalysisConfiguration.FA_time_win = 5
+df5 = dp.obtain_population_SOT_windows(folder_list)
 
-AnalysisConfiguration.eng_event_frames = 30
-df_rcv = dp.obtain_engagement(folder_list)
+AnalysisConfiguration.eng_event_frames = 15
+AnalysisConfiguration.FA_rew_frames = 0
+df_rcv_line = dp.obtain_population_engagement(folder_list, line_flag=True)
+df_rcv = dp.obtain_population_engagement(folder_list)
 
-
-
+AnalysisConfiguration.eng_event_frames = 60
+AnalysisConfiguration.FA_rew_frames = 60
+df_rcv60 = dp.obtain_population_engagement(folder_list)
 

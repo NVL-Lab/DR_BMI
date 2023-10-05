@@ -76,13 +76,19 @@ def average_array_samples(arr: np.array, dimension_to_average: int, samples_to_a
     return averages.T
 
 
-def sum_array_samples(arr: np.array, dimension_to_average: int, samples_to_average: int) -> np.array:
-    """ function that averages over a dimension_to_average, X number of samples """
+def sum_array_samples(arr: np.array, dimension_to_sum: int, samples_to_sum: int) -> np.array:
+    """
+     function that sums over a dimension_to_sum, X number of samples
+    :param arr: array to downsample
+    :param dimension_to_sum:
+    :param samples_to_sum: amount of samples to sum
+    :return:
+    """
     # Calculate the number of resulting averages
-    num_averages = arr.shape[dimension_to_average] // samples_to_average
+    num_averages = arr.shape[dimension_to_sum] // samples_to_sum
 
     # Reshape the data to create views for averaging
-    reshaped_data = arr.reshape((num_averages, samples_to_average) + (-1,))
+    reshaped_data = arr.reshape((num_averages, samples_to_sum) + (-1,))
 
     # Calculate the averages along the specified dimension
     sums = np.nansum(reshaped_data, axis=1)
@@ -101,7 +107,12 @@ def remove_redundant(arr: np.array, min_dist: int = 40) -> np.array:
 
 
 def find_closest(arr_orig: np.array, arr_syn: np.array) -> Tuple[np.array, np.array]:
-    """ function to find the closes index of arr_orig for every element of arr_syn"""
+    """
+    function to find the closes index of arr_orig for every element of arr_syn
+    :param arr_orig: original array
+    :param arr_syn: synchronization array
+    :return: closest index array and differences with the synchronization array
+    """
     # Calculate the absolute differences between each element in arr_syn and all elements in arr_origin
     # Initialize empty lists to store closest indexes and differences
     closest_indexes = []
@@ -132,7 +143,11 @@ def find_closest(arr_orig: np.array, arr_syn: np.array) -> Tuple[np.array, np.ar
 
 
 def snr_neuron(folder_suite2p: Path) -> np.array:
-    """ function to find snr of a cell """
+    """
+    function to find snr of a cell
+    :param folder_suite2p: folder where the files are stored
+    :return: array with the snr of each neuron
+    """
     Fneu = np.load(Path(folder_suite2p) / "Fneu.npy")
     F_raw = np.load(Path(folder_suite2p) / "F.npy")
     power_signal_all = np.nanmean(np.square(F_raw), 1)
@@ -144,7 +159,14 @@ def snr_neuron(folder_suite2p: Path) -> np.array:
 
 
 def stability_neuron(folder_suite2p: Path, init: int = 0, end: Optional[int] = None, low_pass_std: float = 1) -> np.array:
-    """ function to obtain the stability of all the neurons in F_raw given by changes on mean and low_pass std"""
+    """
+    function to obtain the stability of all the neurons in F_raw given by changes on mean and low_pass std
+    :param folder_suite2p: folder where the files are stored
+    :param init: initial frame to consider
+    :param end: last frame to consider
+    :param low_pass_std: the threshold to consider for the low pass check
+    :return: array of bools to show stability of each neuron
+    """
     F_raw = np.load(Path(folder_suite2p) / "F.npy")
     if end is None:
         end = F_raw.shape[1]
@@ -163,7 +185,13 @@ def stability_neuron(folder_suite2p: Path, init: int = 0, end: Optional[int] = N
 
 
 def check_arr_stability(arr: np.array, num_samp: int = 10000, threshold: float = 0.2) -> bool:
-    """ function to check the stability of a neuron"""
+    """
+    function to check the stability of a neuron
+    :param arr: array normally the raw signal of a neurn
+    :param num_samp: number of frames/samples to test stability
+    :param threshold: threshold to consider stable
+    :return: bool arr is stable or not
+    """
     if len(arr) < num_samp:
         return True  # Not enough data points to calculate stability.
     indices = np.arange(0, len(arr), num_samp/2, dtype=int)
@@ -180,8 +208,33 @@ def check_arr_stability(arr: np.array, num_samp: int = 10000, threshold: float =
 
 
 def low_pass_arr(arr: np.array, order: int = 5, cutoff_frequency: float = 0.01, fs: float = 30):
-    """ function to check the std of the low_pass filtered signal"""
+    """
+    function to check the std of the low_pass filtered signal
+    :param arr: array to filter
+    :param order: order of the filter
+    :param cutoff_frequency: cutoff frequency
+    :param fs: sample frequency
+    :return: filtered signal
+    """
     b, a = butter(order, cutoff_frequency / (0.5 * fs), btype='low', analog=False)
     # Apply the filter to the signal
     filtered_signal = filtfilt(b, a, arr)
     return filtered_signal
+
+
+def remove_matching_index(arr: np.array, indices: np.array, num_index: int) -> np.array:
+    """
+    function to remove the indexes in indices and any other element a number num_index before
+    :param arr: np.array where to remove the indices
+    :param indices: indices to be removed
+    :param num_index: all other elements before the indices to be removed
+    :return: array with removed indices
+    """
+    matching_elements = np.intersect1d(arr, indices)
+    for element in matching_elements:
+        index = np.where(arr == element)[0][0]
+        # Calculate the starting index for removal (300 elements before the matching element)
+        start_index = max(0, index - num_index)
+        # Remove the elements
+        arr = np.delete(arr, np.arange(start_index, index + 1))
+    return arr
