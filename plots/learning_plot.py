@@ -165,7 +165,7 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
         for experiment_type in ['D1act']:
             df_exp = df_group[df_group.experiment == experiment_type]
             x, y = ut_plots.array_regplot(df_exp, signal)
-            sns.regplot(x=x, y=y, x_estimator=gmean, color=color_this_plot[experiment_type], ax=ax7)
+            sns.regplot(x=x, y=y, color=color_this_plot[experiment_type], ax=ax7)
             ut_plots.get_reg_pvalues(y, x, ax7, np.nanmean(x), np.nanmean(y))
         ut_plots.save_plot(fig7, ax7, folder_plots, 'array', signal, False)
 

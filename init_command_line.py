@@ -227,5 +227,14 @@ df_rcv = dp.obtain_population_engagement(folder_list)
 
 AnalysisConfiguration.eng_event_frames = 60
 AnalysisConfiguration.FA_rew_frames = 60
-df_rcv60 = dp.obtain_population_engagement(folder_list)
+df_rcv2 = dp.obtain_population_engagement(folder_list)
 
+AnalysisConfiguration.eng_event_frames = 150
+AnalysisConfiguration.FA_rew_frames = 60
+df_rcv = dp.obtain_population_engagement(folder_list)
+
+
+AnalysisConfiguration.FA_stim_win = 10
+df_sot = dp.obtain_population_SOT_line(folder_list)
+AnalysisConfiguration.FA_stim_win = 5
+df_sot5 = dp.obtain_population_SOT_line(folder_list)

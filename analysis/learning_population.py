@@ -25,6 +25,7 @@ def obtain_gain(folder_list: list, time_or_hit: str = 'time') -> pd.DataFrame:
             df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
             folder_raw = Path(folder_list[ss.find_folder_path(mouse)]) / 'raw'
             for index, row in df_sessions_mouse.iterrows():
+                print('Gain of ' + row['session_path'])
                 folder_path = folder_raw / row['session_path']
                 ret['mice'].append(mouse)
                 ret['session_path'].append(row['session_path'])

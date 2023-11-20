@@ -75,17 +75,23 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
         fig1, ax1 = ut_plots.open_plot()
         sot_array = np.full((len(df_d1act.mice.unique()), len_array), np.nan)
         sot_calib = np.full((len(df_d1act.mice.unique()), len_array), np.nan)
-        for mm, mouse in enumerate(df.mice.unique()):
+        for mm, mouse in enumerate(df_d1act.mice.unique()):
             day_values = np.vstack(df_d1act[df_d1act.mice == mouse][cc].values)
             if 'stim' in cc:
                 cc_calib = cc.replace("stim", "calib")
             elif 'target' in cc:
                 cc_calib = cc.replace("target", "calib")
             day_calib = np.vstack(df_d1act[df_d1act.mice == mouse][cc_calib].values)
+            fig2, ax2 = ut_plots.open_plot()
+            for n in np.arange(day_calib.shape[0]):
+                sns.regplot(x=np.arange(100), y=day_values[n,:], ax=ax2)
+                ax2.set_xlabel(cc)
             min_x = np.min([len_array, day_values.shape[1]])
-            sot_array[mm, :min_x] = np.nanmean(day_values, 0)[:min_x]
-            sot_calib[mm, :min_x] = np.nanmean(day_calib, 0)[:min_x]
-            ax1.plot(sot_array[mm, :], '.', color=color_mapping[mouse])
+            sot_array[mm, :min_x] = np.mean(day_values, 0)[:min_x]
+            sot_calib[mm, :min_x] = np.mean(day_calib, 0)[:min_x]
+            sns.regplot(x=np.arange(len_array), y=sot_array[mm, :], ax=ax1, color=color_mapping[mouse])
+            print('mouse: ' + mouse + 'len: ' + str(np.sum(~np.isnan(sot_array[mm, :]))))
+            # ax1.plot(sot_array[mm, :], '.', color=color_mapping[mouse])
         ax1.set_xlabel(cc)
         sns.regplot(x=np.arange(len_array), y=np.nanmean(sot_array, 0), ax=ax1)
         sns.regplot(x=np.arange(len_array), y=np.nanmean(sot_calib, 0), ax=ax1, color='lightgray')
@@ -95,9 +101,9 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
     df_e = df[df.columns[:3]]
     df_l = df[df.columns[:3]]
     for cc in df.columns[3:]:
-        df_a[cc] = df[cc].apply(lambda x: np.nanmean(x))
-        df_e[cc] = df[cc].apply(lambda x: np.nanmean(x[:5]))
-        df_l[cc] = df[cc].apply(lambda x: np.nanmean(x[20:]))
+        df_a[cc] = df[cc].apply(lambda x: np.mean(x[~np.isnan(x)]))
+        df_e[cc] = df[cc].apply(lambda x: np.mean(x[~np.isnan(x)][:10]))
+        df_l[cc] = df[cc].apply(lambda x: np.mean(x[~np.isnan(x)][-10:]))
     df_a['period'] = 'all'
     df_e['period'] = 'early'
     df_l['period'] = 'late'
@@ -105,7 +111,7 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
     df_av = pd.concat((df_a, df_e, df_l))
     df_group = df_el.groupby(['mice', 'experiment']).mean().reset_index()
 
-    df_time = df_a[df_a.experiment.isin(['D1act', 'DELAY', 'RANDOM'])]
+    df_time = df_a[df_a.experiment.isin(['D1act', 'CONTROL_LIGHT', 'DELAY', 'RANDOM'])]
     df_time = df_time.drop(['session_path', 'period'], axis=1)
 
     for col in df_time.columns:
@@ -119,7 +125,7 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
 
     df_group = df_time.groupby(['mice', 'experiment']).mean().reset_index()
 
-    for cc in df_group.filter(like='r2'):
+    for cc in df_group.filter(like='SOT'):
         fig2, ax2 = ut_plots.open_plot()
         sns.boxplot(data=df_group, x='experiment', y=cc, order=['D1act', 'CONTROL_LIGHT', 'DELAY', 'RANDOM'], ax=ax2)
         sns.stripplot(data=df_group, x="experiment", y=cc, hue='mice',
@@ -218,8 +224,6 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
         a = df_exp[df_exp.SOT_Type == 'dn'].DIV_Value
         b = df_exp[df_exp.SOT_Type == 'in'].DIV_Value
         ut_plots.get_pvalues(a, b, ax4, pos=0.5, height=a[~np.isnan(a)].max(), ind=False)
-
-
 
     df_av = df_av.dropna()
     df_av = df_av.drop('session_path', axis=1)
