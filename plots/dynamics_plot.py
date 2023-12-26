@@ -68,10 +68,11 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
         plt.xlabel(cc)
         plt.legend()
 
-    len_array = 40
+    len_array = 20
     df_d1act = df[df.experiment == 'D1act']
     col_aux = [col for col in df_d1act.columns[3:] if 'calib' not in col]
     for cc in col_aux:
+        df_d1act = ut.replace_cc_val_with_nan(df_d1act, cc, len_array)
         fig1, ax1 = ut_plots.open_plot()
         sot_array = np.full((len(df_d1act.mice.unique()), len_array), np.nan)
         sot_calib = np.full((len(df_d1act.mice.unique()), len_array), np.nan)
@@ -82,15 +83,16 @@ def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
             elif 'target' in cc:
                 cc_calib = cc.replace("target", "calib")
             day_calib = np.vstack(df_d1act[df_d1act.mice == mouse][cc_calib].values)
-            fig2, ax2 = ut_plots.open_plot()
-            for n in np.arange(day_calib.shape[0]):
-                sns.regplot(x=np.arange(100), y=day_values[n,:], ax=ax2)
-                ax2.set_xlabel(cc)
+            # fig2, ax2 = ut_plots.open_plot()
+            # for n in np.arange(day_calib.shape[0]):
+            #     sns.regplot(x=np.arange(100), y=day_values[n,:] / np.nanmean(day_calib[n,:]), ax=ax2)
+            #     ax2.set_xlabel(cc)
             min_x = np.min([len_array, day_values.shape[1]])
-            sot_array[mm, :min_x] = np.mean(day_values, 0)[:min_x]
-            sot_calib[mm, :min_x] = np.mean(day_calib, 0)[:min_x]
-            sns.regplot(x=np.arange(len_array), y=sot_array[mm, :], ax=ax1, color=color_mapping[mouse])
-            print('mouse: ' + mouse + 'len: ' + str(np.sum(~np.isnan(sot_array[mm, :]))))
+            sot_array[mm, :min_x] = np.nanmean(day_values, 0)[:min_x]
+            sot_calib[mm, :min_x] = np.nanmean(day_calib, 0)[:min_x]
+
+            # sns.regplot(x=np.arange(len_array), y=sot_array[mm, :], ax=ax1, color=color_mapping[mouse])
+            #print('mouse: ' + mouse + 'len: ' + str(np.sum(~np.isnan(sot_array[mm, :]))))
             # ax1.plot(sot_array[mm, :], '.', color=color_mapping[mouse])
         ax1.set_xlabel(cc)
         sns.regplot(x=np.arange(len_array), y=np.nanmean(sot_array, 0), ax=ax1)
@@ -359,3 +361,77 @@ def plot_SOT_EL(df: pd.DataFrame, df_learning: pd.DataFrame, df_snr:pd.DataFrame
     sns.boxplot(data=df_div, x='SOT_Type', y='DIV_Value', hue='experiment', ax=ax5)
     fig6, ax6 = ut_plots.open_plot()
     sns.boxplot(data=df_div, x='experiment', y='DIV_Value', hue='SOT_Type', ax=ax6)
+
+
+    ##
+
+def plot_tim_manifold():
+    len_array = 30
+    for cc in ['dim', 'SOT', 'VAF']:
+        fig1, ax1 = ut_plots.open_plot()
+        sot_array = np.full((len(df.mice.unique()), len_array), np.nan)
+        for mm, mouse in enumerate(df.mice.unique()):
+            day_values = np.vstack(df[df.mice == mouse][cc].values)
+
+            # fig2, ax2 = ut_plots.open_plot()
+            # for n in np.arange(day_calib.shape[0]):
+            #     sns.regplot(x=np.arange(100), y=day_values[n,:] / np.nanmean(day_calib[n,:]), ax=ax2)
+            #     ax2.set_xlabel(cc)
+            min_x = np.min([len_array, day_values.shape[1]])
+            sot_array[mm, :min_x] = np.nanmean(day_values, 0)[:min_x]
+        ax1.set_xlabel(cc)
+        sns.regplot(x=np.arange(len_array), y=np.nanmean(sot_array, 0), ax=ax1)
+        ut_plots.get_reg_pvalues(np.arange(len_array), np.nanmean(sot_array, 0), ax1, 1, height=np.nanmean(sot_array))
+
+
+def plot_sot_trial(folder_list: list):
+
+    # r2_l = np.nanmean(r2_l_e, 3)
+    # r2_l2 = np.nanmean(r2_l2_e, 3)
+    # r2_rcv = np.nanmean(r2_rcv_e, 3)
+    # r2_dff_rcv = np.nanmean(r2_dff_rcv_e, 3)
+    # aux = np.nanmean(r2_dff_rcv, 2)
+    # plt.plot(aux[0,:]), plt.plot(aux[19,:])
+    indices_lag = np.arange(-120, 90, 6)
+    SOT_all_dnd, SOT_all_ind = dp.obtain_population_trial_SOT(folder_list, 'DELAY')
+    SOT_all_dn, SOT_all_in = dp.obtain_population_trial_SOT(folder_list, 'D1act')
+    df_d1act = ss.get_sessions_df(folder_list, 'D1act')
+    mice_d1act = df_d1act.mice_name.unique()
+    df_delay = ss.get_sessions_df(folder_list, 'DELAY')
+    mice_delay = df_delay.mice_name.unique()
+    df_random = ss.get_sessions_df(folder_list, 'RANDOM')
+    mice_random = df_random.mice_name.unique()
+
+    SOT_dn = np.nanmean(np.nanmean(SOT_all_dn, 3), 0)
+    SOT_in = np.nanmean(np.nanmean(SOT_all_in, 3), 0)
+    SOT_dnd = np.nanmean(np.nanmean(SOT_all_dnd, 3), 0)
+    SOT_ind = np.nanmean(np.nanmean(SOT_all_ind, 3), 0)
+    SOT_dnr = np.nanmean(np.nanmean(SOT_all_dnr, 3), 0)
+    SOT_inr = np.nanmean(np.nanmean(SOT_all_inr, 3), 0)
+
+    fig1, ax1 = ut_plots.open_plot()
+    for ind in np.arange(SOT_dn.shape[1]):
+        ax1.plot(indices_lag / 30, SOT_dn[:, ind], color=color_mapping[mice_d1act[ind]], lw=0.2)
+    ax1.plot(indices_lag / 30, np.nanmean(SOT_dn,1), color='darkgray', lw=4)
+    ax1.plot(indices_lag / 30, np.nanmean(SOT_in, 1), color='lightgray', lw=4)
+    ax1.axvline(x=0, ymin=0.15, ymax=0.35, color='r', linestyle='--')
+    ax1.set_xlabel('D1act')
+    ax1.set_ylim([0.1, 0.75])
+
+    fig2, ax2 = ut_plots.open_plot()
+    for ind in np.arange(SOT_dnd.shape[1]):
+        ax2.plot(indices_lag / 30, SOT_dnd[:, ind], color=color_mapping[mice_delay[ind]], lw=0.2)
+    ax2.plot(indices_lag / 30, np.nanmean(SOT_dnd, 1), color='darkgray', lw=4)
+    ax2.plot(indices_lag / 30, np.nanmean(SOT_ind, 1), color='lightgray', lw=4)
+    ax2.axvline(x=0, ymin=0.15, ymax=0.35, color='r', linestyle='--')
+    ax2.set_xlabel('Delay')
+    ax2.set_ylim([0.1, 0.75])
+
+    fig3, ax3 = ut_plots.open_plot()
+    for ind in np.arange(SOT_dnr.shape[1]):
+        ax3.plot(indices_lag / 30, SOT_dnr[:, ind], color=color_mapping[mice_random[ind]], lw=0.2)
+    ax3.plot(indices_lag / 30, np.nanmean(SOT_dnr, 1), color='darkgray', lw=4)
+    ax3.plot(indices_lag / 30, np.nanmean(SOT_inr, 1), color='lightgray', lw=4)
+    ax3.axvline(x=0, ymin=0.15, ymax=0.35, color='r', linestyle='--')
+    ax3.set_xlabel('RANDOM')
+    ax3.set_ylim([0.1, 0.75])

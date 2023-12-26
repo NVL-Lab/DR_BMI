@@ -49,6 +49,37 @@ def obtain_manifold(folder_suite2p: Path, expected_length: int = 54000):
     return dim_array.mean(0), SOT_array.mean(0), VAF_array.mean(0)
 
 
+def obtain_manifold_time(folder_suite2p: Path, expected_length: int = 54000, time_points: int = 30):
+    """ function to obtain the measures for manifold info """
+    spks = np.load(Path(folder_suite2p) / "spks.npy")
+    if spks.shape[1] != expected_length:
+        raise ValueError(f'The length of the experiment should be {expected_length} and is {spks.shape[1]}')
+    is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
+    spks_av = spks[is_cell[:, 0].astype(bool), :]
+    if spks_av.shape[0] > AnalysisConfiguration.FA_n_neu:
+        n_neu = int(AnalysisConfiguration.FA_n_neu)
+        n_iter = AnalysisConfiguration.FA_n_iter
+    else:
+        n_neu = int(spks_av.shape[0])
+        n_iter = 1
+    frame_array = np.linspace(0, spks_av.shape[1], time_points + 1, dtype=int)
+
+    dim_array = np.full((n_iter, len(frame_array)), np.nan)
+    SOT_array = np.full((n_iter, len(frame_array)), np.nan)
+    VAF_array = np.full((n_iter, len(frame_array)), np.nan)
+
+    for iter in np.arange(n_iter):
+        for tt, frame in enumerate(frame_array[:-1]):
+            selected_neurons = np.random.choice(np.arange(spks_av.shape[0]), size=n_neu, replace=False)
+            spks = spks_av[selected_neurons, frame:frame_array[tt + 1]]
+            dim, _, _ = dm.obtain_FA(spks, VAF=AnalysisConfiguration.FA_VAF)
+            _, SOT, VAF = dm.obtain_FA(spks, n_components=AnalysisConfiguration.FA_components)
+            dim_array[iter, tt] = dim
+            SOT_array[iter, tt] = SOT
+            VAF_array[iter, tt] = VAF
+    return dim_array.mean(0), SOT_array.mean(0), VAF_array.mean(0)
+
+
 def obtain_SOT_over_time(folder_suite2p: Path, tos: str = 'stim') \
         -> Tuple[np.array, np.array, np.array, np.array]:
     """ function to obtain the SOT over time for direct and indirect neurons with neurons x time """
@@ -81,7 +112,7 @@ def obtain_SOT_over_time(folder_suite2p: Path, tos: str = 'stim') \
     return SOT_stim_dn, SOT_stim_in, SOT_stim_all, DIM_stim_all
 
 
-def obtain_SOT_over_time_line(folder_suite2p: Path, tos: str = 'stim') -> Tuple[np.array, np.array]:
+def obtain_SOT_over_all_lines(folder_suite2p: Path, tos: str = 'stim') -> Tuple[np.array, np.array]:
     """ function to obtain the SOT over time for direct and indirect neurons with stimxtime"""
     if tos == 'stim':
         index_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
@@ -364,3 +395,156 @@ def obtain_engagement_line(folder_suite2p: Path, tos: str = 'stim'):
             r2_dff_rcv[stim-win] = r.score(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]].T,
                                        cursor_aux[(stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])
     return r2_l, r2_l2, r2_rcv, r2_dff_rcv
+
+
+def obtain_engagement_trial(folder_suite2p: Path, indices_lag: np.array, tos: str = 'stim'):
+    """ function to obtain the engagement of indirect neurons to the cursor"""
+    if tos == 'stim':
+        index_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
+        index_dict = index_aux.take(0)
+        indices = index_dict['stim_index']
+    elif tos == 'target':
+        index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
+        index_dict = index_aux.take(0)
+        indices = index_dict['target_index']
+    else:
+        indices = np.sort(np.random.randint(AnalysisConfiguration.FA_event_frames + 1,
+                                            AnalysisConstants.calibration_frames - AnalysisConfiguration.FA_event_frames - 1,
+                                            size=AnalysisConfiguration.FA_len_SOT))
+    dff = pp.obtain_dffs(folder_suite2p, smooth=True)
+    is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
+    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = aux_dn.take(0)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
+    indirect_neurons = copy.deepcopy(is_cell)
+    indirect_neurons[ensemble, :] = [0, 0]
+    indirect_neurons[direct_neurons['exclude'], :] = [0, 0]
+
+    win = int(np.ceil(AnalysisConfiguration.FA_stim_win / 2))
+    if len(indices) >= 2*win:
+        r2_l = np.full((len(indices)-2*win, len(indices_lag)), np.nan)
+        r2_l2 = np.full((len(indices)-2*win, len(indices_lag)), np.nan)
+        r2_rcv = np.full((len(indices)-2*win, len(indices_lag)), np.nan)
+        r2_dff_rcv = np.full((len(indices)-2*win, len(indices_lag)), np.nan)
+    else:
+        return np.full((1, len(indices_lag)), np.nan), np.full((1, len(indices_lag)), np.nan), \
+               np.full((1, len(indices_lag)), np.nan), np.full((1, len(indices_lag)), np.nan)
+
+    for ii, il in enumerate(indices_lag):
+        indices_aux = indices + il
+        indices_aux = indices_aux[np.where(np.logical_and(np.logical_and(indices_aux +
+                                                                 AnalysisConfiguration.FA_rew_frames < dff.shape[1],
+                                                                 indices_aux > AnalysisConfiguration.eng_event_frames),
+                                                  np.isin(indices_aux, np.where(~np.isnan(dff.mean(0)))[0])))[0]]
+
+        dff_tl = pp.create_time_locked_array(dff, indices_aux, (AnalysisConfiguration.eng_event_frames,
+                                                            AnalysisConfiguration.FA_rew_frames))
+        dff_dn_cursor = dff[ensemble, :]
+        dff_dn = dff_tl[ensemble, :, :]
+        dff_in = dff_tl[indirect_neurons[:, 0].astype(bool), :, :]
+        cursor = - np.nanmean(dff_dn_cursor[:2, :], 0) + np.nanmean(dff_dn_cursor[2:, :], 0)
+        cursor_tl = pp.create_time_locked_array(cursor, indices_aux, (AnalysisConfiguration.eng_event_frames,
+                                                                  AnalysisConfiguration.FA_rew_frames))
+
+        if dff_in.shape[0] >= 2:
+            dff_dn_aux = dff_dn.reshape((dff_dn.shape[0], -1))
+            dff_in_aux = dff_in.reshape((dff_in.shape[0], -1))
+            cursor_aux = cursor_tl.reshape(-1)
+            for stim in np.arange(win, dff_tl.shape[1] - win):
+                if np.sum(np.isnan(dff_dn_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])) > 0 or \
+                        np.sum(np.isnan(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])) > 0 or \
+                        np.sum(np.isnan(cursor_aux[(stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])) > 0:
+                    continue
+                latents = dm.obtain_latent(dff_dn_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])
+                r = RidgeCV(5).fit(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]].T, latents)
+                r2_l[stim-win, ii] = r.score(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]].T, latents)
+                latents = dm.obtain_latent(dff_dn_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]], 2)
+                r = RidgeCV(5).fit(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]].T, latents)
+                r2_l2[stim-win, ii] = r.score(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]].T, latents)
+                latents = dm.obtain_latent(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]], 2)
+                r = RidgeCV(5).fit(latents, cursor_aux[(stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])
+                r2_rcv[stim-win, ii] = r.score(latents, cursor_aux[(stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])
+                r = RidgeCV(5).fit(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]].T,
+                                   cursor_aux[(stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])
+                r2_dff_rcv[stim-win, ii] = r.score(dff_in_aux[:, (stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]].T,
+                                           cursor_aux[(stim - win)*dff_dn.shape[2]: (stim + win)*dff_dn.shape[2]])
+    return r2_l, r2_l2, r2_rcv, r2_dff_rcv
+
+
+def obtain_SOT_over_trial(folder_suite2p: Path, indices_lag: np.array, tos: str = 'stim') \
+        -> Tuple[np.array, np.array]:
+    """ function to obtain the SOT over time for direct and indirect neurons with neurons x time """
+    if tos == 'stim':
+        index_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
+        index_dict = index_aux.take(0)
+        indices = index_dict['stim_index']
+    elif tos == 'target':
+        index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
+        index_dict = index_aux.take(0)
+        indices = index_dict['target_index']
+    else:
+        indices = np.sort(np.random.randint(AnalysisConfiguration.FA_event_frames + 1,
+                                            AnalysisConstants.calibration_frames - AnalysisConfiguration.FA_rew_frames - 1,
+                                            size=AnalysisConfiguration.FA_len_SOT))
+    spks_dff = np.load(Path(folder_suite2p) / "spks_dff.npy")
+    is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
+    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = aux_dn.take(0)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
+    indirect_neurons = copy.deepcopy(is_cell)
+    indirect_neurons[ensemble, :] = [0, 0]
+    indirect_neurons[direct_neurons['exclude'], :] = [0, 0]
+    SOT_t_dn = np.full((len(indices), len(indices_lag)), np.nan)
+    SOT_t_in = np.full((len(indices), len(indices_lag)), np.nan)
+
+    for ii, il in enumerate(indices_lag):
+        indices_aux = indices + il
+        indices_aux = indices_aux[np.where(np.logical_and(np.logical_and(indices_aux +
+                                                                 AnalysisConfiguration.FA_rew_frames < spks_dff.shape[1],
+                                                                 indices_aux > AnalysisConfiguration.FA_event_frames),
+                                                  np.isin(indices_aux, np.where(~np.isnan(spks_dff.mean(0)))[0])))[0]]
+
+        SOT_stim_dn, SOT_stim_in, _, _ = obtain_SOT_event(indices_aux, ensemble, indirect_neurons,
+                                                                                spks_dff)
+        min_x = np.min([SOT_stim_dn.shape[0], SOT_t_dn.shape[0]])
+        SOT_t_dn[:min_x, ii] = SOT_stim_dn[:min_x]
+        SOT_t_in[:min_x, ii] = SOT_stim_in[:min_x]
+    return SOT_t_dn, SOT_t_in
+
+
+def obtain_SOT_over_all_trials(folder_suite2p: Path, indices_lag: np.array, tos: str = 'stim') -> Tuple[np.array, np.array]:
+    """ function to obtain the SOT over time for direct and indirect neurons with stimxtime"""
+    if tos == 'stim':
+        index_aux = np.load(Path(folder_suite2p) / "stim_time_dict.npy", allow_pickle=True)
+        index_dict = index_aux.take(0)
+        indices = index_dict['stim_index']
+    elif tos == 'target':
+        index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
+        index_dict = index_aux.take(0)
+        indices = index_dict['target_index']
+    else:
+        indices = np.sort(np.random.randint(AnalysisConfiguration.FA_event_frames + 1,
+                                            AnalysisConstants.calibration_frames - AnalysisConfiguration.FA_rew_frames - 1,
+                                            size=AnalysisConfiguration.FA_len_SOT))
+    spks_dff = np.load(Path(folder_suite2p) / "spks_dff.npy")
+    is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
+    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = aux_dn.take(0)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
+    indirect_neurons = copy.deepcopy(is_cell)
+    indirect_neurons[ensemble, :] = [0, 0]
+    indirect_neurons[direct_neurons['exclude'], :] = [0, 0]
+    SOT_t_dn = np.full((len(indices), len(indices_lag)), np.nan)
+    SOT_t_in = np.full((len(indices), len(indices_lag)), np.nan)
+    for ii, il in enumerate(indices_lag):
+        indices_aux = indices + il
+        indices_aux = indices_aux[np.where(np.logical_and(np.logical_and(indices_aux +
+                                                                 AnalysisConfiguration.FA_rew_frames < spks_dff.shape[1],
+                                                                 indices_aux > AnalysisConfiguration.FA_event_frames),
+                                                  np.isin(indices_aux, np.where(~np.isnan(spks_dff.mean(0)))[0])))[0]]
+
+        SOT_ln_dn, SOT_ln_in = obtain_SOT_line(indices_aux, ensemble, indirect_neurons, spks_dff)
+        min_x = np.min([SOT_ln_dn.shape[0], SOT_t_dn.shape[0]])
+        SOT_t_dn[:min_x, ii] = SOT_ln_dn[:min_x]
+        SOT_t_in[:min_x, ii] = SOT_ln_in[:min_x]
+    return SOT_t_dn, SOT_t_in

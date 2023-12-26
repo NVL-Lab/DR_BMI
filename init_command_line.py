@@ -217,13 +217,18 @@ AnalysisConfiguration.FA_event_frames = 30
 AnalysisConfiguration.FA_rew_frames = 0
 df_SOT_line = dp.obtain_population_SOT_line(folder_list)
 df_SOT = dp.obtain_population_SOT(folder_list)
-AnalysisConfiguration.FA_time_win = 5
-df5 = dp.obtain_population_SOT_windows(folder_list)
+AnalysisConfiguration.FA_rew_frames = 15
+AnalysisConfiguration.FA_event_frames = 15
+df_SOT_line2 = dp.obtain_population_SOT_line(folder_list)
+df_SOT2 = dp.obtain_population_SOT(folder_list)
 
-AnalysisConfiguration.eng_event_frames = 15
-AnalysisConfiguration.FA_rew_frames = 0
+AnalysisConfiguration.eng_event_frames = 30
 df_rcv_line = dp.obtain_population_engagement(folder_list, line_flag=True)
 df_rcv = dp.obtain_population_engagement(folder_list)
+AnalysisConfiguration.FA_rew_frames = 60
+AnalysisConfiguration.eng_event_frames = 0
+df_rcv_line2 = dp.obtain_population_engagement(folder_list, line_flag=True)
+df_rcv2 = dp.obtain_population_engagement(folder_list)
 
 AnalysisConfiguration.eng_event_frames = 60
 AnalysisConfiguration.FA_rew_frames = 60

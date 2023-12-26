@@ -1,6 +1,7 @@
 __author__ = 'Nuria'
 
 import collections
+from typing import Tuple
 
 import pandas as pd
 import numpy as np
@@ -35,6 +36,26 @@ def obtain_manifold_spontaneous(folder_list: list) -> pd.DataFrame:
             ret['VAF_sa'].append(VAF_array[2])
             ret['VAF_all'].append(VAF_array[0])
             ret['VAF_d1r'].append(VAF_array[1])
+    return pd.DataFrame(ret)
+
+
+def obtain_manifold_spontaneous_time(folder_list: list) -> pd.DataFrame:
+    """ function to obtain manifold for all behav experiments """
+    ret = collections.defaultdict(list)
+    df_sessions = ss.get_sessions_df(folder_list, 'BEHAVIOR')
+    mice = df_sessions.mice_name.unique()
+    time_points = 30
+    for aa, mouse in enumerate(mice):
+        df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
+        folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
+        for index, row in df_sessions_mouse.iterrows():
+            folder_processed_experiment = Path(folder_process) / row['session_path'] / 'behavior'
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+            ret['mice'].append(mouse)
+            dim_array, SOT_array, VAF_array = da.obtain_manifold_time(folder_suite2p, time_points=time_points)
+            ret['dim'].append(dim_array)
+            ret['SOT'].append(SOT_array)
+            ret['VAF'].append(VAF_array)
     return pd.DataFrame(ret)
 
 
@@ -162,7 +183,7 @@ def obtain_population_SOT_line(folder_list: list) -> pd.DataFrame:
                     ret['mice'].append(mouse)
                     ret['session_path'].append(row['session_path'])
                     ret['experiment'].append(experiment_type)
-                    SOT_stim_dn, SOT_stim_in = da.obtain_SOT_over_time_line(folder_suite2p, tos='stim')
+                    SOT_stim_dn, SOT_stim_in = da.obtain_SOT_over_all_lines(folder_suite2p, tos='stim')
                     SOT_dn_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     SOT_in_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     min_x = np.min([AnalysisConfiguration.FA_len_SOT, len(SOT_stim_in)])
@@ -170,7 +191,7 @@ def obtain_population_SOT_line(folder_list: list) -> pd.DataFrame:
                     SOT_in_array[:min_x] = SOT_stim_in[:min_x]
                     ret['SOT_stim_dn'].append(SOT_dn_array)
                     ret['SOT_stim_in'].append(SOT_in_array)
-                    SOT_stim_dn, SOT_stim_in = da.obtain_SOT_over_time_line(folder_suite2p, tos='target')
+                    SOT_stim_dn, SOT_stim_in = da.obtain_SOT_over_all_lines(folder_suite2p, tos='target')
                     SOT_dn_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     SOT_in_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     min_x = np.min([AnalysisConfiguration.FA_len_SOT, len(SOT_stim_in)])
@@ -178,7 +199,7 @@ def obtain_population_SOT_line(folder_list: list) -> pd.DataFrame:
                     SOT_in_array[:min_x] = SOT_stim_in[:min_x]
                     ret['SOT_target_dn'].append(SOT_dn_array)
                     ret['SOT_target_in'].append(SOT_in_array)
-                    SOT_stim_dn, SOT_stim_in = da.obtain_SOT_over_time_line(folder_suite2p, tos='calib')
+                    SOT_stim_dn, SOT_stim_in = da.obtain_SOT_over_all_lines(folder_suite2p, tos='calib')
                     SOT_dn_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     SOT_in_array = np.full(AnalysisConfiguration.FA_len_SOT, np.nan)
                     min_x = np.min([AnalysisConfiguration.FA_len_SOT, len(SOT_stim_in)])
@@ -258,3 +279,61 @@ def obtain_population_engagement(folder_list: list, line_flag: bool = False) -> 
                     ret['r2_rcv_calib'].append(r2_rcv_array)
                     ret['r2_dff_rcv_calib'].append(r2_dff_rcv_array)
     return pd.DataFrame(ret)
+
+
+def obtain_population_trial_engagement(folder_list: list, experiment_type: str) -> Tuple[np.array, np.array, np.array, np.array]:
+    """ function to obtain engagement of indirect neurons for all experiments with neurons x time """
+    indices_lag = np.arange(-150, 60, 15)
+    AnalysisConfiguration.FA_rew_frames = 30
+    AnalysisConfiguration.eng_event_frames = 30
+    if experiment_type not in ['CONTROL', 'CONTROL_AGO']:
+        df_sessions = ss.get_sessions_df(folder_list, experiment_type)
+        mice = df_sessions.mice_name.unique()
+        r2_l_e = np.full((30, len(indices_lag), len(mice), 10), np.nan)
+        r2_l2_e = np.full((30, len(indices_lag), len(mice), 10), np.nan)
+        r2_rcv_e = np.full((30, len(indices_lag), len(mice), 10), np.nan)
+        r2_dff_rcv_e = np.full((30, len(indices_lag), len(mice), 10), np.nan)
+        for aa, mouse in enumerate(mice):
+            df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse].reset_index(drop=True)
+            folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
+            for index, row in df_sessions_mouse.iterrows():
+                print('eng of ' + row['session_path'])
+                folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
+                r2_l, r2_l2, r2_rcv, r2_dff_rcv = da.obtain_engagement_trial(folder_suite2p, indices_lag, tos='stim')
+                min_x = np.min([r2_l.shape[0], r2_l_e.shape[0]])
+                r2_l_e[:min_x, :, aa, index] = r2_l[:min_x, :]
+                r2_l2_e[:min_x, :, aa, index] = r2_l2[:min_x, :]
+                r2_rcv_e[:min_x, :, aa, index] = r2_rcv[:min_x, :]
+                r2_dff_rcv_e[:min_x, :, aa, index] = r2_dff_rcv[:min_x, :]
+    else:
+        return np.nan, np.nan, np.nan, np.nan
+    return r2_l_e, r2_l2_e, r2_rcv_e, r2_dff_rcv_e
+
+
+def obtain_population_trial_SOT(folder_list: list, experiment_type: str, line: bool = False) -> Tuple[np.array, np.array]:
+    """ function to obtain engagement of indirect neurons for all experiments with neurons x time """
+    indices_lag = np.arange(-120, 90, 6)
+    AnalysisConfiguration.FA_rew_frames = 15
+    AnalysisConfiguration.FA_event_frames = 15
+    if experiment_type not in ['CONTROL', 'CONTROL_AGO']:
+        df_sessions = ss.get_sessions_df(folder_list, experiment_type)
+        mice = df_sessions.mice_name.unique()
+        SOT_all_dn = np.full((30, len(indices_lag), len(mice), 10), np.nan)
+        SOT_all_in = np.full((30, len(indices_lag), len(mice), 10), np.nan)
+
+        for aa, mouse in enumerate(mice):
+            df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse].reset_index(drop=True)
+            folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
+            for index, row in df_sessions_mouse.iterrows():
+                print('SOT of ' + row['session_path'])
+                folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
+                if line:
+                    SOT_t_dn, SOT_t_in = da.obtain_SOT_over_all_trials(folder_suite2p, indices_lag)
+                else:
+                    SOT_t_dn, SOT_t_in = da.obtain_SOT_over_trial(folder_suite2p, indices_lag)
+                min_x = np.min([SOT_t_dn.shape[0], SOT_all_dn.shape[0]])
+                SOT_all_dn[:min_x, :, aa, index] = SOT_t_dn[:min_x, :]
+                SOT_all_in[:min_x, :, aa, index] = SOT_t_in[:min_x, :]
+    else:
+        return np.nan, np.nan
+    return SOT_all_dn, SOT_all_in

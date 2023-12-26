@@ -238,3 +238,21 @@ def remove_matching_index(arr: np.array, indices: np.array, num_index: int) -> n
         # Remove the elements
         arr = np.delete(arr, np.arange(start_index, index + 1))
     return arr
+
+
+def replace_cc_val_with_nan(df, column_name, num_values: int = 10):
+    """
+    Replace array values with NaN if there are less than 10 non-NaN values in the array.
+
+    :param df: Pandas DataFrame containing the column with arrays.
+    :param column_name: Name of the column containing the arrays.
+    :return: Modified DataFrame with updated arrays.
+    """
+
+    def replace_array(arr):
+        # Count non-NaN values and replace array if count is less than 10
+        non_nan_count = np.count_nonzero(~np.isnan(arr))
+        return np.full_like(arr, np.nan) if non_nan_count < num_values else arr
+
+    df[column_name] = df[column_name].apply(replace_array)
+    return df
