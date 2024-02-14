@@ -17,6 +17,7 @@ from utils.analysis_constants import AnalysisConstants
 interactive(True)
 
 
+
 def plot_FA_spontaneous_activity(df: pd.DataFrame, folder_plots: Path):
     """ function to plot the results of the spontaenous activity"""
     color_mapping = ut_plots.generate_palette_all_figures()

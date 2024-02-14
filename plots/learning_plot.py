@@ -306,7 +306,7 @@ def learning_posthoc(df):
     df = df.dropna()
     df_T1 = df[df['T'] == 'T1']
     df_rest = df[~df['T'].isin(['T1', 'T2'])]
-    df_rest = df_rest.drop(df_rest[df_rest.gain==0].index)
+    df_rest.loc[df_rest.gain == 0, 'gain'] = 0.1
     dd = df_T1.groupby(['mice', 'experiment']).apply(ut.geometric_mean, 'gain').reset_index()
     ddrest = df_rest.groupby(['mice', 'experiment', 'session_path']).apply(ut.geometric_mean, 'gain').reset_index()
     ddrest = ddrest.drop(['session_path'], axis=1)
@@ -332,6 +332,23 @@ def learning_posthoc(df):
     b = dd[dd['experiment']=='CONTROL'].gain
     ax2.set_ylim([0.15, 3])
     ut_plots.get_pvalues(a, b, ax2, pos=0.5, height=a[~np.isnan(a)].max())
+
+
+    fig3, ax3 = ut_plots.open_plot()
+    ddhpm = df_rest.groupby(['mice', 'experiment', 'session_path']).hits_per_min.mean().reset_index()
+    ddhpm = ddhpm.drop(['session_path'], axis=1)
+    ddhpm = ddhpm.groupby(['mice', 'experiment']).mean().reset_index()
+    ddT1hpm = df_T1.groupby(['mice', 'experiment']).hits_per_min.mean().reset_index()
+    ddT1hpm['T'] = 'T1'
+    ddhpm['T'] = 'Trest'
+    ddbothhpm = pd.concat((ddT1hpm, ddhpm))
+    dd1acthpm = ddbothhpm[ddbothhpm.experiment == 'D1act']
+    sns.lineplot(data=dd1acthpm, x='T', y='hits_per_min', hue='mice', palette=color_mapping, ax=ax3)
+    sns.stripplot(data=dd1acthpm, x='T', y='hits_per_min', hue='mice', palette=color_mapping, s=10,
+                  marker="D", jitter=False, ax=ax3)
+    a = dd1acthpm[dd1acthpm['T']=='T1'].hits_per_min
+    b = dd1acthpm[dd1acthpm['T']=='Trest'].hits_per_min
+    ut_plots.get_pvalues(a, b, ax3, pos=0.5, height=a[~np.isnan(a)].max())
 
 
 
