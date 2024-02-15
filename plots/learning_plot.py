@@ -172,19 +172,22 @@ def plot_learning(df: pd.DataFrame, folder_plots: Path):
 
 def plot_performance_sessions(df: pd.DataFrame, folder_plots: Path):
     """ function to check if there is a difference in performance for different sessions on same day """
-    df_performance = df[df.session_day.isin(['1st', '2nd'])]
-    df_performance['first_session'] = False
-    df_performance.loc[df_performance.session_day == "1st", 'first_session'] = True
+    # df_performance = df[df.session_day.isin(['1st', '2nd'])]
+    df['first_session'] = False
+    df.loc[df.session_day == "1st", 'first_session'] = True
+    df_dr1act = df[df.experiment == 'D1act']
+    df_dr1act = df_dr1act.drop(['session_path', 'previous_session', 'session_day', 'experiment'], axis=1)
+    df_performance = df_dr1act.groupby(['mice', 'first_session']).mean().reset_index()
     for experiment_type in AnalysisConstants.experiment_types:
         fig1, ax1 = ut_plots.open_plot()
-        df_experiment_type = df_performance[df_performance.experiment == experiment_type]
+        df_experiment_type = df_performance
         sns.boxplot(data=df_experiment_type, x='first_session', y='gain', ax=ax1)
         ax1.set_title(experiment_type)
         ut_plots.get_pvalues(df_experiment_type[df_experiment_type.first_session]['gain'],
                              df_experiment_type[~df_experiment_type.first_session]['gain'],
                              ax1, pos=0.5, height=df_experiment_type['gain'].mean(), ind=True)
-        ut_plots.save_plot(fig1, ax1, folder_plots,
-                           'Differences_same_day_session_' + experiment_type, 'gain', False)
+        # ut_plots.save_plot(fig1, ax1, folder_plots,
+        #                    'Differences_same_day_session_' + experiment_type, 'gain', False)
         fig2, ax2 = ut_plots.open_plot()
         previous_experiments = \
             df_experiment_type[df_experiment_type.previous_session != "None"].previous_session.unique()
@@ -321,6 +324,7 @@ def learning_posthoc(df):
                   marker="D", jitter=False, ax=ax1)
     a = dd1act[dd1act['T']=='T1'].gain
     b = dd1act[dd1act['T']=='Trest'].gain
+    ax1.set_ylim([0,4])
     ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max())
 
     fig2, ax2 = ut_plots.open_plot()
