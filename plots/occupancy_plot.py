@@ -141,5 +141,37 @@ def plot_occupancy_good_sessions(df: pd.DataFrame, df_occupancy: pd.DataFrame):
 
 
 
+#### separate T1 and T2
+
+# Function to rename columns by removing "_T1" or "_T2" suffixes
+def rename_columns(col):
+    if '_T1_' in col:
+        return col.replace('_T1_', '_')
+    elif '_T2_' in col:
+        return col.replace('_T2_', '_')
+    else:
+        return col
+
+def combine_T1_T2():
+    # Split DataFrame into T1 and T2, and rename columns
+    df_t1 = df.filter(regex='_T1$|_T1_|mice').copy()
+    df_t2 = df.filter(regex='_T2$|_T2_|mice').copy()
+
+    df_t1.columns = [rename_columns(col) for col in df_t1.columns]
+    df_t2.columns = [rename_columns(col) for col in df_t2.columns]
+
+    # Add a Type column to indicate T1 or T2
+    df_t1['Type'] = 'T1'
+    df_t2['Type'] = 'T2'
+
+    # Concatenate the DataFrames
+    df_combined = pd.concat([df_t1, df_t2], ignore_index=True)
+
+    # Display the combined DataFrame
+    print(df_combined)
+
+
+
+
 
 
