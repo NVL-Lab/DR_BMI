@@ -90,3 +90,37 @@ def create_df_motion():
 
     df_control.to_parquet("C:/Users/Nuria/Documents/DATA/D1exp/df_data/df_motion_controls.parquet")
     df_motion.to_parquet("C:/Users/Nuria/Documents/DATA/D1exp/df_data/df_motion.parquet")
+
+
+def obtain_motion_trial(folder_list: list, seconds:int = 5) -> pd.DataFrame:
+    """ Function to obtain the motion during the online experiment for all experiments """
+    list_df = []
+    df = ss.get_sessions_df(folder_list, 'D1act')
+    for index, row in df.iterrows():
+        folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+        file_path = Path(folder_raw) / row['session_path'] / 'motor'
+        XY_baseline = ma.extract_XY_data(file_path / row['trigger_baseline'], file_path / row['XY_baseline'])
+        XY_BMI = ma.extract_XY_data(file_path / row['trigger_BMI'], file_path / row['XY_BMI'])
+        if XY_BMI is not None and XY_baseline is not None:
+            df = ma.obtain_motion_hits(XY_BMI, XY_baseline, folder_raw / row['session_path'] / row['BMI_online'], seconds = seconds)
+            df['mice'] = row['mice_name']
+            df['session_path'] = row['session_path']
+            df['day_index'] = row['day_index']
+            list_df.append(df)
+    return pd.concat(list_df)
+
+
+def obtain_r2_motion_cursor(folder_list: list, seconds:int = 5) -> pd.DataFrame:
+    """ Function to obtain the motion during the online experiment for all experiments """
+    ret = collections.defaultdict(list)
+    df_sessions = ss.get_sessions_df(folder_list, 'D1act')
+    for index, row in df_sessions.iterrows():
+        folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+        file_path = Path(folder_raw) / row['session_path'] / 'motor'
+        XY_BMI = ma.extract_XY_data(file_path / row['trigger_BMI'], file_path / row['XY_BMI'])
+        if XY_BMI is not None:
+            ret['mice'].append(row['mice_name'])
+            ret['session_path'].append(row['session_path'])
+            r2 = ma.obtain_motion_cursor(XY_BMI, folder_raw / row['session_path'] / row['BMI_online'])
+            ret['r2'].append(r2)
+    return pd.DataFrame(ret)

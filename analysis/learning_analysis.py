@@ -50,6 +50,3 @@ def gain_self_stim(file_path: str, time_or_hit: str = 'time') -> [float, float, 
         hit_array = np.nan
         time_to_hit = np.nan
     return BMI_hits, BMI_gain, baseline_hits, hit_array, time_to_hit/AnalysisConstants.framerate
-
-
-

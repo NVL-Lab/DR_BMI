@@ -158,7 +158,8 @@ def snr_neuron(folder_suite2p: Path) -> np.array:
     return snr
 
 
-def stability_neuron(folder_suite2p: Path, init: int = 0, end: Optional[int] = None, low_pass_std: float = 1) -> np.array:
+def stability_neuron(folder_suite2p: Path, init: int = 0, end: Optional[int] = None,
+                     low_pass_std: float = 1) -> np.array:
     """
     function to obtain the stability of all the neurons in F_raw given by changes on mean and low_pass std
     :param folder_suite2p: folder where the files are stored
@@ -194,12 +195,12 @@ def check_arr_stability(arr: np.array, num_samp: int = 10000, threshold: float =
     """
     if len(arr) < num_samp:
         return True  # Not enough data points to calculate stability.
-    indices = np.arange(0, len(arr), num_samp/2, dtype=int)
+    indices = np.arange(0, len(arr), num_samp / 2, dtype=int)
     mean_arr = np.zeros(len(indices) - 2)
     for i, index in enumerate(indices[1:-1]):
-        mean_arr[i] = np.mean(arr[index-int(num_samp/2):index+int(num_samp/2)])
-    mean_max = np.max([mean_arr.mean() * (1 + threshold), mean_arr.mean()+2])
-    mean_min = np.min([mean_arr.mean() * (1 - threshold), mean_arr.mean()-2])
+        mean_arr[i] = np.mean(arr[index - int(num_samp / 2):index + int(num_samp / 2)])
+    mean_max = np.max([mean_arr.mean() * (1 + threshold), mean_arr.mean() + 2])
+    mean_min = np.min([mean_arr.mean() * (1 - threshold), mean_arr.mean() - 2])
     stability = np.sum(mean_arr > mean_max) + np.sum(mean_arr < mean_min)
     if stability > 0:
         return False
@@ -256,3 +257,63 @@ def replace_cc_val_with_nan(df, column_name, num_values: int = 10):
 
     df[column_name] = df[column_name].apply(replace_array)
     return df
+
+
+def calculate_zscore_neuron_wise(data_array: np.ndarray) -> np.ndarray:
+    """
+    Calculate the z-score for each element of dimension 0 individually across dim 1 for a given 2D array.
+
+
+    Parameters:
+    - data_array: A 2D numpy array with dimensions [elements, y].
+
+    Returns:
+    - A 2D numpy array of the same shape as data_array, containing the z-scored values for each element.
+    """
+    elements, y = data_array.shape  # Extract the shape of the input array
+
+    # Initialize an array to store z-scored data
+    zscore_data = np.zeros_like(data_array)
+
+    # Calculate z-score for each element
+    for elem in range(elements):
+        zscore_data[elem, :] = stats.zscore(data_array[elem, :], nan_policy='omit')
+
+    return zscore_data
+
+
+def count_since_last(indices: np.array, events: np.array, ind: int, count_indices:bool = False) -> float:
+    """
+    Counts the number of events/indices that have occurred since the last closest marker
+    (either an index for events or an event for indices) up to but excluding the specific marker
+    specified by `ind`.
+
+    This function does not sort `indices` and `events` in ascending order to ensure accurate
+    counting, as it assumes the input is already sorted. It can operate in two modes:
+    1. When `count_indices` is False, given a position "ind" in events, it counts the number of events since the last closest index in `indices` up to (but excluding) the event specified by `ind`.
+    2. When `count_indices` is True, given a position "ind" in indices, it counts the number of indices since the last closest event in `events` up to (but excluding) the index specified by `ind`.
+    """
+    # Determine the target value based on the mode
+    target = indices[ind] if count_indices else events[ind]
+
+    # Determine the list to search in based on the mode
+    search_list = events if count_indices else indices
+
+    # Find the last closest marker before the target
+    last_closest_marker = None
+    for i in search_list:
+        if i < target:
+            last_closest_marker = i
+        else:
+            break
+
+    if last_closest_marker is None:
+        return np.nan
+
+    # Count the number of markers since the last closest marker up to (but excluding) the target
+    count = 0
+    for i in (indices if count_indices else events):
+        if last_closest_marker < i < target:
+            count += 1
+
+    return count

@@ -215,5 +215,103 @@ def plot_snr(df_snr, df_learning):
     ax6.text(5, 5, 'r2= ' + str(pearson_corr ** 2))
 
 
+def plot_raw_dff_online(folder_suite2p: Path, file_path: Path):
+    """ function to obtain raw dff online and offline """
+    bmi_online = sio.loadmat(str(file_path), simplify_cells=True)
+    dff = np.load(Path(folder_suite2p) / "dff.npy")
 
+
+def plot_online_motion(df: pd.DataFrame):
+    """ function to plot the online motion"""
+    color_mapping = ut_plots.generate_palette_all_figures()
+    df_melted = pd.melt(df.drop('day_index', axis=1), id_vars=['mice', 'trial', 'type', 'size', 'session_path'],
+                        value_vars=['before', 'hit', 'reward', 'random'], var_name='time', value_name='pixels')
+    df_melted['pixels_%'] = df_melted['pixels'] / df_melted['size'] * 100
+
+    df_max = df_melted[df_melted.type=='max'].drop(columns=['type'])
+    df_group = df_max.groupby(['mice', 'session_path', 'time']).median().reset_index()
+
+    df_group = (df_group.drop(['session_path', 'trial'], axis=1).groupby(['mice', 'time']).
+                mean().reset_index())
+
+    fig1, ax1 = ut_plots.open_plot()
+    sns.boxplot(data=df_group, x='time', y='pixels', order=['random', 'before', 'hit', 'reward'], color='gray', ax=ax1)
+    sns.stripplot(data=df_group, x='time', y='pixels', hue='mice', palette=color_mapping, jitter=True, ax=ax1)
+    a = df_group[df_group.time == 'reward']['pixels']
+    b = df_group[df_group.time == 'random']['pixels']
+    ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=b[~np.isnan(b)].max(), ind=False)
+
+
+def plot_distance_direct_neurons(df: pd.DataFrame):
+    """ function to plot the distance among sets of ensemble neurons """
+    df = df[df.experiment_type == 'D1act']
+    df['color'] = df['mice_name'].map(color_mapping)
+
+    df['type_code'] = pd.Categorical(df['type']).codes
+
+    # Manually plot the points with jitter and custom colors
+    for idx, row in df.iterrows():
+        jittered_x = row['type_code'] + np.random.uniform(-0.2, 0.2)  # Adding jitter
+        plt.scatter(jittered_x, row['distance'], color=row['color'], edgecolor=row['color'])
+
+
+    plt.xlabel('Type')
+    plt.ylabel('Distance')
+
+    type_categories = pd.Categorical(df['type']).categories
+    plt.xticks(ticks=np.arange(len(type_categories)), labels=type_categories)
+
+
+def plot_snr_e1e2(df: pd.DataFrame):
+    """ function to plot the SNR of direct neurons """
+    color_mapping = ut_plots.generate_palette_all_figures()
+    df = df[df.experiment_type == 'D1act']
+    df = df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df = df.dropna(inplace=True)
+    df['di'] = 'direct'
+    df.loc[df.type=='all','di'] = 'indirect'
+    df_group = df.drop(columns=['experiment_type', 'day_index', 'type']).groupby(['mice_name', 'di', 'session_path']).mean().reset_index()
+    df_group = df_group.drop(columns=['session_path']).groupby(['mice_name', 'di']).mean().reset_index()
+    fig1, ax1 = ut_plots.open_plot()
+    sns.lineplot(data=df_group, y='snr', x='di', hue='mice_name', palette=color_mapping, ax=ax1)
+    sns.stripplot(data=df_group, y='snr', x='di', hue='mice_name', palette=color_mapping, s=10, marker="D", jitter=False, ax=ax1)
+    a = df_group[df_group.di == 'direct']['snr']
+    b = df_group[df_group.di == 'indirect']['snr']
+    ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=b[~np.isnan(b)].max(), ind=False)
+
+
+def plot_traces(folder_suite2p: Path, file_path:Path):
+    """ function to plot traces online/offline """
+    # session used /m28/230414/D06
+
+    dff = np.load(Path(folder_suite2p) / "dff.npy")
+    f = np.load(Path(folder_suite2p) / "f.npy")
+    index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
+    index_dict = index_aux.take(0)
+    indices = index_dict['target_index']
+    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = aux_dn.take(0)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
+    dff_dn = dff[ensemble, :]
+    pre_f_dn = f[ensemble, :]
+    bmi_online = sio.loadmat(file_path, simplify_cells=True)
+    pre_f_online = bmi_online['data']['bmiAct']
+    f_dn = np.full(pre_f_dn.shape, np.nan)
+    f_dn_online = np.full(pre_f_online.shape, np.nan)
+    for neuron in np.arange(f_dn.shape[0]):
+        smooth_filt = np.ones(AnalysisConstants.dff_win) / AnalysisConstants.dff_win
+        f_dn[neuron, AnalysisConstants.dff_win - 1:] = np.convolve(pre_f_dn[neuron,:], smooth_filt, 'valid')
+        f_dn_online[neuron, AnalysisConstants.dff_win - 1:] = np.convolve(pre_f_online[neuron, :], smooth_filt, 'valid')
+    dff_tl = pp.create_time_locked_array(dff_dn, indices, (100, 0))
+    f_tl = pp.create_time_locked_array(f_dn, indices, (100, 0))
+    f_tl_online = pp.create_time_locked_array(f_dn_online[[0, 1, 3, 2],:], np.where(bmi_online['data']['selfHits'])[0], (100, 0))
+    for trial in np.arange(f_tl.shape[1]-20, f_tl.shape[1]):
+        fig1, ax1, ax2, ax3, ax4 = ut_plots.open_4subplots_line()
+        axes = [ax1, ax2, ax3, ax4]
+        for neuron in np.arange(f_dn.shape[0]):
+            ax = axes[neuron]
+            for arr in [f_tl_online[neuron, :, :], f_tl[neuron, :, :], dff_tl[neuron, :, :]]:
+                ax.plot((arr[trial, :] - arr.min())/(arr.max() - arr.min()))
+                ax.set_ylim([0,1])
+                ut_plots.save_plot(fig1, ax, folder_plots, 'raw_traces_' , str(trial), False)
 

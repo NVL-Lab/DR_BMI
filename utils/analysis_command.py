@@ -60,3 +60,5 @@ class AnalysisConfiguration:
     eng_stim_win: int = 10  # number of stims to do the engagement line
     eng_event_frames: float = 30  # number of frames before stim/target to analyze data
 
+    zscore_thres: int = 2  # threshold to select an event
+

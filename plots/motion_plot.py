@@ -75,4 +75,30 @@ def remove_bad_mice(df_motion: pd.DataFrame, mouse :str = 'm25'):
     return df_motion[df_motion.mice.isin(mice)]
 
 
+def plot_motion_trial(df:pd.DataFrame):
+    """ funciton to plot the motion during trials """
+    # df = pd.read_parquet(folder_data / 'motion_during_trial.parquet')
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df = df.dropna()
+    dft = df[df.trial < 30]
+    color_mapping = ut_plots.generate_palette_all_figures()
+    df_trial = dft.drop('session_path', axis=1).groupby(['mice', 'type', 'trial']).mean().reset_index()
+    df_trial = df_trial.drop('mice', axis=1).groupby(['type', 'trial']).mean().reset_index()
+    df_group = df.groupby(['mice', 'type', 'session_path']).mean().reset_index()
+    df_group = df_group.drop(['session_path', 'day_index'], axis=1).groupby(['mice', 'type']).mean().reset_index()
+    for column in df_group.columns[2:]:
+        fig1, ax1 = ut_plots.open_plot()
+        sns.boxplot(data=df_group, x='type', y=column,  color='gray', order=['random', 'before', 'after'], ax=ax1)
+        sns.stripplot(data=df_group, x='type', y=column, hue='mice', order=['random', 'before', 'after'],
+                      palette=color_mapping, ax=ax1)
+        a = df_group[df_group.type == 'random'][column].values.astype('float')
+        b = df_group[df_group.type == 'before'][column].values.astype('float')
+        c = df_group[df_group.type == 'after'][column].values.astype('float')
+        ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
+        ut_plots.get_pvalues(b, c, ax1, pos=1, height=a[~np.isnan(a)].max(), ind=True)
+        ut_plots.get_pvalues(a, c, ax1, pos=1.5, height=a[~np.isnan(a)].max(), ind=True)
+        ut_plots.save_plot(fig1, ax1, folder_plots, 'motion_trial', column, False)
 
+        fig2, ax2 = ut_plots.open_plot()
+        sns.regplot(data=df_trial, x='trial', y=column, ax=ax2)
+        ut_plots.save_plot(fig2, ax2, folder_plots, 'motion_trial_time', column, False)

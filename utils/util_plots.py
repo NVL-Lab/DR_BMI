@@ -29,6 +29,22 @@ def open_2subplots():
     bx.spines["right"].set_visible(False)
     return fig, ax, bx
 
+def open_4subplots_line():
+    fig = plt.figure(figsize=(14, 4))
+    ax = fig.add_subplot(141)
+    bx = fig.add_subplot(142)
+    cx = fig.add_subplot(143)
+    dx = fig.add_subplot(144)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    bx.spines["top"].set_visible(False)
+    bx.spines["right"].set_visible(False)
+    cx.spines["top"].set_visible(False)
+    cx.spines["right"].set_visible(False)
+    dx.spines["top"].set_visible(False)
+    dx.spines["right"].set_visible(False)
+    return fig, ax, bx, cx, dx
+
 
 def open_xsubplots(num_subplots: int = 4):
     fig = plt.figure(figsize=(12, 8))

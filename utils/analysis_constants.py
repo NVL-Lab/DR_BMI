@@ -38,6 +38,7 @@ class AnalysisConstants:
     calibration_frames = 27000  # number of frames during calibration
     dff_win = 10  # number of frames to smooth dff
     len_calibration = 15  # length calibration in minutes
+    lag_stim = 7e-3  # seconds from triggering daq with matlab to turning on light
     experiment_types = ['D1act',
                         'CONTROL', 'CONTROL_LIGHT', 'CONTROL_AGO',
                         'RANDOM', 'NO_AUDIO', 'DELAY']

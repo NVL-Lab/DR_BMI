@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import numpy as np
+import statsmodels.api as sm
 
 from pathlib import Path
 from matplotlib import interactive
@@ -436,3 +437,277 @@ def plot_sot_trial(folder_list: list):
     ax3.axvline(x=0, ymin=0.15, ymax=0.35, color='r', linestyle='--')
     ax3.set_xlabel('RANDOM')
     ax3.set_ylim([0.1, 0.75])
+
+
+def plot_events_stim(df_stim: pd.DataFrame, folder_plots: Path):
+    """ plot  stimulus vs events """
+    color_mapping = ut_plots.generate_palette_all_figures()
+    df_stim['next_sec'] = (df_stim['next']/AnalysisConstants.framerate).round()
+    # df_stim = df_stim.drop(columns=['zscore_next_5', 'next_5', 'rate_5min', 'rate_all'])
+    df_stim_mean = (df_stim.drop(['session_path', 'neuron', 'stim_index'], axis=1).
+                        groupby(['neuron_type', 'event_dist', 'mice']).mean().reset_index())
+
+    for column in df_stim_mean.columns[3:]:
+        fig1, ax1 = ut_plots.open_plot()
+        data_to_plot = df_stim[df_stim['event_dist'] < 90].drop('neuron_type', axis=1)
+        data_to_plot = data_to_plot[['event_dist', column]].dropna()
+        # data_to_plot = df_stim_mean[(df_stim_mean['neuron_type'] == 'na') &
+        #                             (df_stim_mean['event_dist'] < 60)]
+        sns.regplot(data= data_to_plot, x='event_dist', y=column, x_bins=np.arange(0,90,2), fit_reg=True, ax=ax1)
+        # sns.regplot(data=data_to_plot[data_to_plot.event_dist<=9], x='event_dist', y=column, fit_reg=True,
+        #             x_bins=np.arange(0, 90, 2), ax=ax1)
+        ax1.set_xticks(np.arange(0,90, AnalysisConstants.framerate/2))
+        ax1.set_xticklabels(np.around(np.arange(0,3.1,0.5), 1).astype(str))
+        ax1.set_xlabel('Time (s)')
+        ax1.set_ylabel(column)
+        data_to_plot = data_to_plot.groupby('event_dist').mean().reset_index()
+        # ax1.set_ylim([2, 3.7])
+        y = data_to_plot[column]
+        X = data_to_plot['event_dist']
+        ut_plots.get_reg_pvalues(y, X, ax1, 5, np.nanmean(data_to_plot[column]))
+        weights = data_to_plot.groupby('event_dist').size()
+        X = sm.add_constant(X)
+        model = sm.WLS(y, X).fit()
+        ax1.text(2, np.nanmean(y), model.rsquared)
+        ut_plots.save_plot(fig1, ax1, folder_plots, 'stim_all_' , column, False)
+
+    event_loc = [0 , 14]
+    df_stim['event'] = df_stim['event_dist'].apply(lambda x: event_loc[0] < x < event_loc[1])
+    df_stim_mean = (df_stim.drop(['session_path', 'neuron', 'stim_index'], axis=1).
+                        groupby(['neuron_type', 'event_dist', 'mice', 'event']).mean().reset_index())
+    df_stim_mean_mice = df_stim_mean.groupby(['neuron_type', 'mice', 'event']).mean().reset_index()
+    for column in df_stim_mean.columns[5:]:
+        if column == 'next_sec':
+            y_lim_var = [0, 130]
+        elif column == 'rate_min':
+            y_lim_var =[0,17]
+        else:
+            y_lim_var = [2,4.5]
+        for neuron_type in df_stim.neuron_type.unique():
+            fig2, ax2 = ut_plots.open_plot()
+            sns.boxplot(data=df_stim_mean_mice[df_stim_mean_mice['neuron_type'] == neuron_type], x='event', y=column, ax=ax2)
+            sns.stripplot(df_stim_mean_mice[df_stim_mean_mice['neuron_type'] == neuron_type], x='event',
+                          y=column, hue='mice', palette=color_mapping, ax=ax2)
+            a = df_stim_mean_mice[(df_stim_mean_mice['neuron_type'] == neuron_type) &
+                                  (df_stim_mean_mice['event'] == False)][column].values
+            b = df_stim_mean_mice[(df_stim_mean_mice['neuron_type'] == neuron_type) &
+                                  (df_stim_mean_mice['event'] == True)][column].values
+            ut_plots.get_pvalues(a, b, ax2, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
+
+            if neuron_type in ['na', 'E1']:
+                c = df_stim_mean_mice[(df_stim_mean_mice['neuron_type'] == 'E2') &
+                                      (df_stim_mean_mice['event'] == True)][column].values
+                d = df_stim_mean_mice[(df_stim_mean_mice['neuron_type'] == neuron_type) &
+                                      (df_stim_mean_mice['event'] == True)][column].values
+                ut_plots.get_pvalues(c, d, ax2, pos=1, height=c[~np.isnan(c)].max(), ind=True)
+
+            ax2.set_ylim(y_lim_var)
+            ax2.set_title(neuron_type)
+            ut_plots.save_plot(fig2, ax2, folder_plots, 'stim_box_' + neuron_type, column, False)
+
+
+
+
+    scale_factor = 30
+    bin_edges = np.arange(0.5, 3.5, 0.5) * scale_factor
+    bin_edges = np.concatenate(([-float('inf')], bin_edges, [float('inf')]))
+
+    # Create labels for each bin
+    labels = [f'e<{bin_edges[1] / scale_factor}'] + \
+             [f'{bin_edges[i] / scale_factor}<=e<{bin_edges[i + 1] / scale_factor}' for i in
+              range(1, len(bin_edges) - 2)] + \
+             [f'e>={bin_edges[-2] / scale_factor}']
+
+    # Create a new column 'event' based on conditions in 'event_dist'
+    df_stim['event'] = pd.cut(df_stim['event_dist'], bins=bin_edges, labels=labels, right=False)
+
+    df_stim = df_stim.dropna()
+    # df_stim_mean = (df_stim.drop(['event_dist', 'stim_index', 'mice'], axis=1).
+    #                 groupby(['neuron', 'session_path', 'neuron_type', 'event']).mean().reset_index())
+    df_stim_mean_mice = (df_stim.drop(['neuron', 'event_dist', 'stim_index', 'session_path'], axis=1).dropna().
+                         groupby(['neuron_type', 'mice', 'event']).mean().reset_index())
+    df_stim_mean_mice = df_stim_mean_mice.dropna()
+    # df_stim_mean = df_stim_mean.dropna()
+    for column in df_stim_mean_mice.columns[3:]:
+        for neuron_type in df_sorted_mean.neuron_type.unique():
+            fig2, ax2 = ut_plots.open_plot()
+            sns.boxplot(data=df_stim_mean_mice[df_stim_mean_mice['neuron_type'] == neuron_type], x='event', y=column, ax=ax2)
+            sns.stripplot(df_stim_mean_mice[df_stim_mean_mice['neuron_type'] == neuron_type], x='event',
+                          y=column, hue='mice', palette=color_mapping, ax=ax2)
+            a = df_stim_mean_mice[(df_stim_mean_mice['neuron_type'] == neuron_type) &
+                                  (df_stim_mean_mice['event'] == 'e<0.5')][column].values
+            for ee,ev in enumerate(df_stim_mean_mice.event.unique()[1:]):
+
+                b = df_stim_mean_mice[(df_stim_mean_mice['neuron_type'] == neuron_type) &
+                                  (df_stim_mean_mice['event'] == ev)][column].values
+                ut_plots.get_pvalues(a, b, ax2, pos=0.5+ee, height=a[~np.isnan(a)].max(), ind=True)
+            # ax2.set_ylim([0, 130])
+            ax2.set_title(neuron_type)
+            ut_plots.save_plot(fig2, ax2, folder_plots, 'stim_box_times_' + neuron_type, column, False)
+
+    df_x = df_stim_mean_mice[df_stim_mean_mice['event'].isin(['e<0.5', '2.5<=e<3.0'])]
+    df_x['event'] = df_x['event'].cat.remove_unused_categories()
+    for column in df_stim_mean_mice.columns[3:]:
+        for neuron_type in df_sorted_mean.neuron_type.unique():
+            fig2, ax2 = ut_plots.open_plot()
+            sns.boxplot(data=df_x[df_x['neuron_type'] == neuron_type], x='event', y=column, ax=ax2)
+            sns.stripplot(df_x[df_x['neuron_type'] == neuron_type], x='event',
+                          y=column, hue='mice', palette=color_mapping, ax=ax2)
+            a = df_x[(df_x['neuron_type'] == neuron_type) &
+                                  (df_x['event'] == 'e<0.5')][column].values
+            b = df_x[(df_x['neuron_type'] == neuron_type) &
+                                  (df_x['event'] == '2.5<=e<3.0')][column].values
+            ut_plots.get_pvalues(a, b, ax2, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
+            # ax2.set_ylim([0, 130])
+            ax2.set_title(neuron_type)
+
+
+    df_sorted = df_stim.drop(['stim_index', 'event_dist'], axis=1).sort_values(by=['session_path', 'neuron_type', 'event', 'neuron'])
+    df_sorted['stim_count'] = df_sorted.groupby(['neuron', 'session_path', 'event']).cumcount()
+    df_sorted_mean = (df_sorted.drop('session_path', axis=1).
+                      groupby(['neuron', 'event', 'mice','neuron_type', 'stim_count']).mean().reset_index())
+    na_max_count_aux = df_sorted[(df_sorted.neuron_type == 'na') & (df_sorted.event == True)].stim_count.value_counts()
+    na_max_count = na_max_count_aux[na_max_count_aux >= 3].index.max()
+    E2_max_count_aux = df_sorted[(df_sorted.neuron_type == 'E2') & (df_sorted.event == True)].stim_count.value_counts()
+    E2_max_count = E2_max_count_aux[E2_max_count_aux >= 3].index.max()
+    E1_max_count_aux = df_sorted[(df_sorted.neuron_type == 'E1') & (df_sorted.event == True)].stim_count.value_counts()
+    E1_max_count = E1_max_count_aux[E1_max_count_aux >= 3].index.max()
+    for column in df_sorted.columns[2:-4]:
+        for neuron_type in df_sorted_mean.neuron_type.unique():
+            if neuron_type== 'na':
+                max_count = na_max_count
+            elif neuron_type=='E1':
+                max_count = E1_max_count
+            elif neuron_type=='E2':
+                max_count = E2_max_count
+            data_to_plot = df_sorted[(df_sorted.neuron_type==neuron_type)&(df_sorted.stim_count<=max_count)]
+            data_to_plot = data_to_plot[['stim_count', 'event', column]].dropna()
+            weights = 1. / (data_to_plot[data_to_plot.event]['stim_count'] + 0.1)
+            y = data_to_plot[data_to_plot.event][column]
+            X = sm.add_constant(data_to_plot[data_to_plot.event]['stim_count'])
+            model_wls = sm.WLS(y, X, weights=weights)
+            results_wls = model_wls.fit()
+            h = sns.lmplot(x='stim_count', y=column, data=data_to_plot, hue='event',
+                       x_bins=np.arange(0, E2_max_count, 1))
+            h.ax.text(1, data_to_plot[data_to_plot.event][column].mean(), ut_plots.calc_pvalue(results_wls.pvalues.stim_count))
+            h.ax.text(1.1, data_to_plot[data_to_plot.event][column].mean(), "p = %0.1E" % results_wls.pvalues.stim_count)
+            h.ax.set_title(neuron_type + '_' + column)
+            # ut_plots.get_anova_pvalues(data_to_plot[data_to_plot.event == True][column],
+            #                          data_to_plot[data_to_plot.event == False][column])
+            # ut_plots.get_reg_pvalues(data_to_plot[data_to_plot.event==True][column],
+            #                          data_to_plot[data_to_plot.event==True]['stim_count'],
+            #                          h.ax, 0, np.nanmean(data_to_plot[column]))
+            # ut_plots.get_reg_pvalues(data_to_plot[data_to_plot.event==False][column],
+            #                          data_to_plot[data_to_plot.event==False]['stim_count'],
+            #                          h.ax, 5, np.nanmean(data_to_plot[column]))
+
+            # h.ax.set_ylim([2, 6.5])
+            ut_plots.save_plot(h.fig, h.ax, folder_plots, 'stim_counts_' + neuron_type, column, False)
+
+def plot_events(df: pd.DataFrame):
+    """ plot events vs stimulus """
+    df_nocab = df[~df['calibration']].drop(['calibration', 'baseline'], axis=1)
+    df_nocab_mean = df_nocab.drop('session_path', axis=1).groupby(['neuron_type', 'stim_dist', 'mice']).mean().reset_index()
+    df_mean = (df.drop(['calibration', 'baseline', 'session_path'], axis=1).
+               groupby(['neuron_type', 'stim_dist', 'mice']).mean().reset_index())
+
+    for column in df_nocab_mean.columns[5:-1]:
+        for neuron_type in ['E2', 'na']:
+            fig1, ax1 = ut_plots.open_plot()
+            data_to_plot = df_nocab_mean[(df_nocab_mean['neuron_type'] == neuron_type) &
+                                           (df_nocab_mean['stim_dist'] < 300)]
+            sns.regplot(data=data_to_plot, x='stim_dist', y=column, x_bins=np.arange(0,300,5), ax=ax1)
+            ax1.set_xticks(np.arange(0,300, AnalysisConstants.framerate))
+            ax1.set_xticklabels(np.arange(0,11).astype(str))
+            ax1.set_title(neuron_type)
+            ax1.set_xlabel('Time (s)')
+            ax1.set_ylabel(column)
+            ax1.set_title(neuron_type)
+            ut_plots.get_reg_pvalues(data_to_plot[column], data_to_plot['stim_dist'],
+                                     ax1, 5, np.nanmean(data_to_plot[column]))
+            ut_plots.save_plot(fig1, ax1, folder_plots, 'event_' + neuron_type, column, False)
+
+
+    stim_loc = [0 , 14]
+    df_nocab_mean['stim'] = df_nocab_mean['stim_dist'].apply(lambda x: stim_loc[0] < x < stim_loc[1])
+    df_mean['stim'] = df_mean['stim_dist'].apply(lambda x: stim_loc[0] < x < stim_loc[1])
+    df_nocab['stim'] = df_nocab['stim_dist'].apply(lambda x: stim_loc[0] < x < stim_loc[1])
+
+    df_nocab_mean_mice = df_nocab_mean.groupby(['neuron_type', 'mice', 'stim']).mean().reset_index()
+    df_mean_mice = df_mean.groupby(['neuron_type', 'mice', 'stim']).mean().reset_index()
+
+    for column in df_nocab_mean.columns[5:-1]:
+        for neuron_type in df_nocab_mean.neuron_type.unique():
+            fig1, ax1 = ut_plots.open_plot()
+            sns.boxplot(data=df_nocab_mean_mice[df_nocab_mean_mice['neuron_type'] == neuron_type], x='stim', y=column, ax=ax1)
+            sns.stripplot(df_nocab_mean_mice[df_nocab_mean_mice['neuron_type'] == neuron_type], x='stim',
+                          y=column, hue='mice', palette=color_mapping, ax=ax1)
+            a = df_nocab_mean_mice[(df_nocab_mean_mice['neuron_type'] == neuron_type) & (df_nocab_mean_mice['stim'] == False)][column].values
+            b = df_nocab_mean_mice[(df_nocab_mean_mice['neuron_type'] == neuron_type) & (df_nocab_mean_mice['stim'] == True)][column].values
+            ut_plots.get_pvalues(a, b, ax1, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
+            ax1.set_title(neuron_type + "_nobas")
+
+            fig2, ax2 = ut_plots.open_plot()
+            sns.boxplot(data=df_mean_mice[df_mean_mice['neuron_type'] == neuron_type], x='stim', y=column, ax=ax2)
+            sns.stripplot(df_mean_mice[df_mean_mice['neuron_type'] == neuron_type], x='stim',
+                          y=column, hue='mice', palette=color_mapping, ax=ax2)
+            a = df_mean_mice[(df_mean_mice['neuron_type'] == neuron_type) & (df_mean_mice['stim'] == False)][column].values
+            b = df_mean_mice[(df_mean_mice['neuron_type'] == neuron_type) & (df_mean_mice['stim'] == True)][column].values
+            ut_plots.get_pvalues(a, b, ax2, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
+            ax2.set_title(neuron_type)
+
+    for column in df_nocab.columns[5:-1]:
+        for neuron_type in df_nocab.neuron_type.unique():
+            fig3, ax3 = ut_plots.open_plot()
+            sns.boxplot(data=df_nocab[df_nocab['neuron_type'] == neuron_type], x='stim', y=column, ax=ax3)
+            # sns.stripplot(df_nocab[df_nocab['neuron_type'] == neuron_type], x='stim',
+            #               y=column, hue='mice', palette=color_mapping, ax=ax1)
+            a = df_nocab[(df_nocab['neuron_type'] == neuron_type) & (df_nocab['stim'] == False)][column].values
+            b = df_nocab[(df_nocab['neuron_type'] == neuron_type) & (df_nocab['stim'] == True)][column].values
+            ut_plots.get_pvalues(a, b, ax3, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
+            ax3.set_title(neuron_type + "_nobas")
+
+            fig4, ax4 = ut_plots.open_plot()
+            sns.boxplot(data=df[df['neuron_type'] == neuron_type], x='stim', y=column, ax=ax4)
+            # sns.stripplot(df[df['neuron_type'] == neuron_type], x='stim',
+            #               y=column, hue='mice', palette=color_mapping, ax=ax2)
+            a = df[(df['neuron_type'] == neuron_type) & (df['stim'] == False)][column].values
+            b = df[(df['neuron_type'] == neuron_type) & (df['stim'] == True)][column].values
+            ut_plots.get_pvalues(a, b, ax4, pos=0.5, height=a[~np.isnan(a)].max(), ind=True)
+            ax4.set_title(neuron_type)
+
+
+    df_sorted = df_nocab.sort_values(by=['session_path', 'neuron_type', 'stim', 'neuron'])
+    df_sorted['event_count'] = df_sorted.groupby(['neuron', 'session_path', 'stim']).cumcount()
+    df_sorted_mean = (df_sorted.drop('session_path', axis=1).
+                      groupby(['neuron', 'stim', 'mice','neuron_type', 'event_count']).mean().reset_index())
+    na_max_count_aux = df_sorted[(df_sorted.neuron_type == 'na') & (df_sorted.stim == True)].event_count.value_counts()
+    na_max_count = na_max_count_aux[na_max_count_aux >= 3].index.max()
+    E2_max_count_aux = df_sorted[(df_sorted.neuron_type == 'E2') & (df_sorted.stim == True)].event_count.value_counts()
+    E2_max_count = E2_max_count_aux[E2_max_count_aux >= 3].index.max()
+    for column in df_sorted.columns[5:-4]:
+        for neuron_type in df_nocab_mean.neuron_type.unique():
+            if neuron_type== 'na':
+                max_count = na_max_count
+            elif neuron_type=='E2':
+                max_count = E2_max_count
+            data_to_plot = df_sorted[(df_sorted.neuron_type==neuron_type)&(df_sorted.event_count<=max_count)]
+            h = sns.lmplot(x='event_count', y=column, data=data_to_plot, hue='stim',
+                       x_bins=np.arange(0, E2_max_count, 1))
+            ut_plots.get_reg_pvalues(data_to_plot[data_to_plot.stim==True][column],
+                                     data_to_plot[data_to_plot.stim==True]['event_count'],
+                                     h.ax, 0, np.nanmean(data_to_plot[column]))
+            ut_plots.get_reg_pvalues(data_to_plot[data_to_plot.stim==False][column],
+                                     data_to_plot[data_to_plot.stim==False]['event_count'],
+                                     h.ax, 5, np.nanmean(data_to_plot[column]))
+            h.ax.set_title(neuron_type + '_' + column)
+            ut_plots.save_plot(h.fig, h.ax, folder_plots, 'event_counts' + neuron_type, column, False)
+
+
+
+    # result_df = df.groupby(['neuron', 'stim', 'mice', 'session_path', 'neuron_type']).agg({
+    #     'next': 'mean',  # Average of 'next'
+    #     'zscore_next': 'mean',  # Average of 'score_next'
+    #     'event_index': 'count'  # Count of 'event_index'}).reset_index()
+    # }).reset_index()
+    # sns.lmplot(x='event_index', y='next', data=result_df[result_df.neuron_type=='na'], hue='stim')

@@ -35,9 +35,9 @@ from analysis import dynamics_population as dp
 interactive(True)
 
 folder_list = {'FA': 'D:/data', 'FB': 'E:/data', 'FC': 'F:/data'}
-folder_data = Path("C:/Users/Nuria/Documents/DATA/D1exp/df_data")
-folder_plots = Path("C:/Users/Nuria/Documents/DATA/D1exp/plots")
-default_path = Path("C:/Users/Nuria/Documents/DATA/D1exp/default_var")
+folder_data = Path("C:/Users/Nuria/Documents/DATA/D1RBMI/D1exp/df_data")
+folder_plots = Path("C:/Users/Nuria/Documents/DATA/D1RBMI/D1exp/plots")
+default_path = Path("C:/Users/Nuria/Documents/DATA/D1RBMI/D1exp/default_var")
 
 ###########################################################
 # suite2p

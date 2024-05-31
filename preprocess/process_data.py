@@ -207,19 +207,117 @@ def obtain_snr(folder_list: list) -> pd.DataFrame:
     """ function to obtain the snr of all the experiments """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.experiment_types:
-        df = ssa.get_sessions_df(folder_list, experiment_type)
+        #df = ssa.get_sessions_df(folder_list, experiment_type) -> for all sessions
+        df = ss.get_sessions_df(folder_list, experiment_type)
         for index, row in df.iterrows():
+
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_processed_experiment = Path(folder_process) / row['session_path']
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+            snr_all, snr_E1, snr_E2 = pp.obtain_SNR_per_neuron(folder_suite2p)
+            arrays = [('all', snr_all), ('E1', snr_E1), ('E2', snr_E2)]
+            for name, array in arrays:
+                for i, value in enumerate(array):
+                    ret['mice_name'].append(row['mice_name'])
+                    ret['experiment_type'].append(row['experiment_type'])
+                    ret['session_path'].append(row['session_path'])
+                    ret['day_index'].append(row['day_index'])
+                    ret['type'].append(name)
+                    ret['num'].append(i)
+                    ret['snr'].append(value)
+
+    return pd.DataFrame(ret)
+
+
+def obtain_added(folder_list: list) -> pd.DataFrame:
+    """ function to obtain the snr of all the experiments """
+    ret = collections.defaultdict(list)
+    for experiment_type in AnalysisConstants.experiment_types:
+        #df = ssa.get_sessions_df(folder_list, experiment_type) -> for all sessions
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_processed_experiment = Path(folder_process) / row['session_path']
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+            direct_neurons_aux = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+            direct_neurons = direct_neurons_aux.take(0)
+            if len(direct_neurons['added_neurons']) > 0:
+                for neuron in direct_neurons['added_neurons']:
+                    ret['mice_name'].append(row['mice_name'])
+                    ret['experiment_type'].append(row['experiment_type'])
+                    ret['session_path'].append(row['session_path'])
+                    ret['added'].append(neuron)
+                    if neuron in direct_neurons['E1']:
+                        ret['type'].append('E1')
+                    elif neuron in direct_neurons['E2']:
+                        ret['type'].append('E2')
+                    else:
+                        ret['type'].append('ind')
+    return pd.DataFrame(ret)
+
+def obtain_motion(folder_list: list) -> pd.DataFrame:
+    """ Function to obtain the motion during the online experiment for all experiments """
+    list_df = []
+    df = ss.get_sessions_df(folder_list, 'D1act')
+    for index, row in df.iterrows():
+        folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+        folder_processed_experiment = Path(folder_process) / row['session_path']
+        folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+        df_motion = pp.obtain_motion_per_experiment(folder_suite2p)
+        df_motion['mice'] = row['mice_name']
+        df_motion['session_path'] = row['session_path']
+        df_motion['day_index'] = row['day_index']
+        list_df.append(df_motion)
+    return pd.concat(list_df)
+
+def obtain_dist_neurons(folder_list: list) -> pd.DataFrame:
+    """ function to obtain the distance among direct neurons of all the experiments """
+    ret = collections.defaultdict(list)
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_processed_experiment = Path(folder_process) / row['session_path']
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+            E1E1, E2E2, E1E2 = pp.obtain_location_direct_neurons(folder_suite2p)
             ret['mice_name'].append(row['mice_name'])
             ret['experiment_type'].append(row['experiment_type'])
             ret['session_path'].append(row['session_path'])
             ret['day_index'].append(row['day_index'])
-            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
-            folder_processed_experiment = Path(folder_process) / row['session_path']
-            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
-            snr_all, snr_dn, snr_dn_min = pp.obtain_SNR_per_neuron(folder_suite2p)
-            ret['snr_all'].append(snr_all)
-            ret['snr_dn'].append(snr_dn)
-            ret['snr_dn_min'].append(snr_dn_min)
+            ret['type'].append('E1E1')
+            ret['distance'].append(E1E1)
+            ret['mice_name'].append(row['mice_name'])
+            ret['experiment_type'].append(row['experiment_type'])
+            ret['session_path'].append(row['session_path'])
+            ret['day_index'].append(row['day_index'])
+            ret['type'].append('E2E2')
+            ret['distance'].append(E2E2)
+            for val in E1E2:
+                ret['mice_name'].append(row['mice_name'])
+                ret['experiment_type'].append(row['experiment_type'])
+                ret['session_path'].append(row['session_path'])
+                ret['day_index'].append(row['day_index'])
+                ret['type'].append('E1E2')
+                ret['distance'].append(val)
+    return pd.DataFrame(ret)
+
+
+def obtain_delay(folder_list: list) -> pd.DataFrame:
+    """ function to obtain the delay at time of hit of all the experiments """
+    ret = collections.defaultdict(list)
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+            file_path = folder_raw / row['session_path'] / row['BMI_online']
+            delay = pp.obtain_online_time_vector(file_path)
+            for trial, element in enumerate(delay):
+                ret['mice_name'].append(row['mice_name'])
+                ret['experiment_type'].append(row['experiment_type'])
+                ret['session_path'].append(row['session_path'])
+                ret['day_index'].append(row['day_index'])
+                ret['trial'].append(trial)
+                ret['delay'].append(element)
     return pd.DataFrame(ret)
 
 
@@ -249,3 +347,61 @@ def create_bad_frames_mat(folder_list: list):
                 bad_frames_aux = np.load(file_path, allow_pickle=True)
                 bad_frames = bad_frames_aux.take(0)
                 sio.savemat(folder_suite2p / 'bad_frames.mat', bad_frames)
+
+
+def convert_process_files_for_upload(folder_list: list, folder_dst: Path):
+    """ Function to copy the files from the hard drives to upload to dryad and move them to the destination folder """
+    for experiment_type in experiment_types:
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            print('creating the zif_file for ' + row['session_path'])
+            folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+            folder_processed_experiment = Path(folder_process) / row['session_path']
+            folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+
+            # Replace invalid characters in session_path
+            sanitized_session_path = row['session_path'].replace('/', '_').replace('\\', '_')
+
+            # Create a zip file of the contents of folder_suite2p
+            zip_file_name = f"{sanitized_session_path}_suite2p.zip"
+            zip_file_path = folder_processed_experiment / zip_file_name
+
+            with zipfile.ZipFile(zip_file_path, 'w') as zipf:
+                for foldername, subfolders, filenames in os.walk(folder_suite2p):
+                    for filename in filenames:
+                        file_path = Path(foldername) / filename
+                        zipf.write(file_path, arcname=file_path.relative_to(folder_suite2p.parent))
+
+            # Move the zip file to the destination folder
+            print('moving the zif_file')
+            shutil.move(zip_file_path, folder_dst / zip_file_name)
+
+
+def convert_bmi_files_for_upload(folder_list: list, folder_dst: Path):
+    """ Function to copy the files from the hard drives to upload to dryad and move them to the destination folder """
+    for experiment_type in AnalysisConstants.experiment_types:
+        df = ss.get_sessions_df(folder_list, experiment_type)
+        for index, row in df.iterrows():
+            print('creating the zif_file for ' + row['session_path'])
+            folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+            folder_raw_experiment = folder_raw / row['session_path']
+
+            # Replace invalid characters in session_path
+            sanitized_session_path = row['session_path'].replace('/', '_').replace('\\', '_')
+
+            # Create a zip file of the contents of folder_raw_experiment
+            zip_file_name = f"{sanitized_session_path}_bmi.zip"
+            zip_file_path = folder_raw / zip_file_name
+
+            with zipfile.ZipFile(zip_file_path, 'w') as zipf:
+                for foldername, subfolders, filenames in os.walk(folder_raw_experiment):
+                    relative_path = Path(foldername).relative_to(folder_raw_experiment)
+                    # Save files in the root of folder_raw_experiment and in the "plots" subfolder only
+                    if relative_path == Path('.') or relative_path == Path('motor'):
+                        for filename in filenames:
+                            file_path = Path(foldername) / filename
+                            zipf.write(file_path, arcname=file_path.relative_to(folder_raw_experiment))
+
+            # Move the zip file to the destination folder
+            print('moving the zif_file')
+            shutil.move(zip_file_path, folder_dst / zip_file_name)

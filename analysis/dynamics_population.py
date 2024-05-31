@@ -141,28 +141,27 @@ def obtain_population_SOT_windows(folder_list: list, remove_target: bool = True)
     for ww, win in enumerate(aux_w[1:]):
         windows.append((aux_w[ww], win))
 
-    for experiment_type in AnalysisConstants.experiment_types:
-        if experiment_type not in ['CONTROL', 'CONTROL_AGO']:
-            df_sessions = ss.get_sessions_df(folder_list, experiment_type)
-            mice = df_sessions.mice_name.unique()
-            for aa, mouse in enumerate(mice):
-                df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
-                folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
-                for index, row in df_sessions_mouse.iterrows():
-                    print('SOT windows of ' + row['session_path'])
-                    folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
-                    for ww, win in enumerate(windows):
-                        SOT_dn, SOT_in = da.obtain_SOT_windows(folder_suite2p, win, remove_target=remove_target)
-                        ret['mice'].append(mouse)
-                        ret['session_path'].append(row['session_path'])
-                        ret['experiment'].append(experiment_type)
-                        ret['window'].append(ww)
-                        if ww < len_base_windows:
-                            ret['win_type'].append('calib')
-                        else:
-                            ret['win_type'].append('exp')
-                        ret['SOT_dn'].append(SOT_dn)
-                        ret['SOT_in'].append(SOT_in)
+    df_sessions = ss.get_sessions_df(folder_list, 'D1act')
+    mice = df_sessions.mice_name.unique()
+    for aa, mouse in enumerate(mice):
+        df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
+        folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
+        for index, row in df_sessions_mouse.iterrows():
+            print('SOT windows of ' + row['session_path'])
+            folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
+            for ww, win in enumerate(windows):
+                SOT_dn, SOT_in, DIM_dn, DIM_in = da.obtain_SOT_windows(folder_suite2p, win, remove_target=remove_target)
+                ret['mice'].append(mouse)
+                ret['session_path'].append(row['session_path'])
+                ret['window'].append(ww)
+                if ww < len_base_windows:
+                    ret['win_type'].append('calib')
+                else:
+                    ret['win_type'].append('exp')
+                ret['SOT_dn'].append(SOT_dn)
+                ret['SOT_in'].append(SOT_in)
+                ret['DIM_dn'].append(DIM_dn)
+                ret['DIM_in'].append(DIM_in)
 
     return pd.DataFrame(ret)
 
@@ -337,3 +336,31 @@ def obtain_population_trial_SOT(folder_list: list, experiment_type: str, line: b
     else:
         return np.nan, np.nan
     return SOT_all_dn, SOT_all_in
+
+
+def obtain_df_events_population(folder_list: list, win: int = 10) -> pd.DataFrame:
+    """ function to obtain diverse metrics of events """
+    # df_sessions = pd.concat([ss.get_sessions_df(folder_list, 'RANDOM'),
+                            # ss.get_sessions_df(folder_list, 'DELAY')])
+    df_sessions = ss.get_sessions_df(folder_list, 'D1act')
+    mice = df_sessions.mice_name.unique()
+    # list_dfs = []
+    list_df_stim = []
+
+    for aa, mouse in enumerate(mice):
+        df_sessions_mouse = df_sessions[df_sessions.mice_name == mouse]
+        folder_process = Path(folder_list[ss.find_folder_path(mouse)]) / 'process'
+        for index, row in df_sessions_mouse.iterrows():
+            print("analyzing now:  " + row.session_path)
+            folder_suite2p = Path(folder_process) / row['session_path'] / 'suite2p' / 'plane0'
+            # aux_df = da.obtain_dp_events_per_event(folder_suite2p, AnalysisConfiguration.zscore_thres, win)
+            aux_df_stim = da.obtain_dp_events_per_stim(folder_suite2p, AnalysisConfiguration.zscore_thres, win)
+            # aux_df['mice'] = mouse
+            aux_df_stim['mice'] = mouse
+            # aux_df['session_path'] = row.session_path
+            aux_df_stim['session_path'] = row.session_path
+            # list_dfs.append(aux_df)
+            list_df_stim.append(aux_df_stim)
+    # df = pd.concat(list_dfs)
+    df_stim = pd.concat(list_df_stim)
+    return df_stim

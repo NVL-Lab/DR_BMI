@@ -4,6 +4,7 @@ __author__ = 'Nuria'
 import os
 import shutil
 import copy
+import math
 
 import pandas as pd
 import numpy as np
@@ -332,19 +333,117 @@ def obtain_SNR_per_neuron(folder_suite2p: Path) -> Tuple[float, float, float]:
     is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
     direct_neurons_aux = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
     direct_neurons = direct_neurons_aux.take(0)
-    ensemble = direct_neurons['E1'] + direct_neurons['E2']
 
-    power_signal_all = np.nanmean(np.square(F_raw[is_cell[:, 0].astype(bool), :]), 1)
-    power_noise_all = np.nanmean(np.square(Fneu[is_cell[:, 0].astype(bool), :]), 1)
+    power_signal_all = np.nanmean(np.square(F_raw), 1)
+    power_noise_all = np.nanmean(np.square(Fneu), 1)
 
-    power_signal_dn = np.nanmean(np.square(F_raw[ensemble, :]), 1)
-    power_noise_dn = np.nanmean(np.square(Fneu[ensemble, :]), 1)
+    power_signal_dn_E1 = np.nanmean(np.square(F_raw[direct_neurons['E1'], :]), 1)
+    power_noise_dn_E1 = np.nanmean(np.square(Fneu[direct_neurons['E1'], :]), 1)
+    power_signal_dn_E2 = np.nanmean(np.square(F_raw[direct_neurons['E2'], :]), 1)
+    power_noise_dn_E2 = np.nanmean(np.square(Fneu[direct_neurons['E2'], :]), 1)
 
     # Calculate the SNR
     snr_all = 10 * np.log10(power_signal_all / power_noise_all)
-    snr_dn = 10 * np.log10(power_signal_dn / power_noise_dn)
-    return snr_all.mean(), snr_dn.mean(), snr_dn.min()
+    snr_dn_E1 = 10 * np.log10(power_signal_dn_E1 / power_noise_dn_E1)
+    snr_dn_E2 = 10 * np.log10(power_signal_dn_E2 / power_noise_dn_E2)
+    return snr_all, snr_dn_E1, snr_dn_E2
 
+def obtain_motion_per_experiment(folder_suite2p: Path, fc: int = 10) -> pd.DataFrame:
+    """ Function to obtain the motion during the online experiment based on suite2p measures
+    :param folder_suite2p: folder where the experiment is
+    :param fc: number of frames considered before and after the target acquisition to check motion
+    the BMI averages over 10 frames """
+    ops = np.load(Path(folder_suite2p) / "ops.npy", allow_pickle=True)
+    ops = ops.take(0)
+    index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
+    index_dict = index_aux.take(0)
+    direct_neurons_aux = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = direct_neurons_aux.take(0)
+    neurons = np.load(Path(folder_suite2p) / "stat.npy", allow_pickle=True)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
+    size_dn = np.full(len(ensemble), np.nan)
+    for dd, dn in enumerate(ensemble):
+        size_dn[dd] = neurons[dd]['radius']*2
+
+
+    indices = index_dict['target_index']
+    random_indices = np.sort(np.random.randint(fc + 1,
+                                               AnalysisConstants.calibration_frames - 1, indices.shape[0]))
+
+    xoff_tl = create_time_locked_array(ops['xoff'], indices, (2 * fc, fc))
+    yoff_tl = create_time_locked_array(ops['yoff'], indices, (2 * fc, fc))
+    xoff_rand_tl = create_time_locked_array(ops['xoff'], random_indices, (fc, 0))
+    yoff_rand_tl = create_time_locked_array(ops['yoff'], random_indices, (fc, 0))
+    distance_final = np.asarray([np.sqrt(np.diff(xoff_tl[:, :fc]).sum(1)**2 +
+                                         np.diff(yoff_tl[:, :fc]).sum(1)**2),
+                                 np.sqrt(np.diff(xoff_tl[:, fc:2*fc]).sum(1)**2 +
+                                         np.diff(yoff_tl[:, fc:2*fc]).sum(1)**2),
+                                 np.sqrt(np.diff(xoff_tl[:, 2*fc:]).sum(1)**2 +
+                                         np.diff(yoff_tl[:, 2*fc:]).sum(1)**2),
+                                 np.sqrt(np.diff(xoff_rand_tl).sum(1) ** 2 +
+                                         np.diff(yoff_rand_tl).sum(1) ** 2)
+                                 ])
+    distance_max = np.asarray([np.sqrt(np.abs(np.diff(xoff_tl[:, :fc]))**2 +
+                                         np.abs(np.diff(yoff_tl[:, :fc]))**2).max(1),
+                                 np.sqrt(np.abs(np.diff(xoff_tl[:, fc:2*fc]))**2 +
+                                         np.abs(np.diff(yoff_tl[:, fc:2*fc]))**2).max(1),
+                                 np.sqrt(np.abs(np.diff(xoff_tl[:, 2*fc:]))**2 +
+                                         np.abs(np.diff(yoff_tl[:, 2*fc:]))**2).max(1),
+                                 np.sqrt(np.abs(np.diff(xoff_rand_tl))** 2 +
+                                         np.abs(np.diff(yoff_rand_tl))** 2).max(1)
+                                 ])
+    df_final = pd.DataFrame(columns=['before', 'hit', 'reward', 'random'],
+                            index=np.arange(indices.shape[0]), data=distance_final.T)
+    df_final['trial'] = np.arange(indices.shape[0])
+    df_final['type'] = 'final'
+    df_final['size'] = size_dn.mean()
+    df_max = pd.DataFrame(columns=['before', 'hit', 'reward', 'random'],
+                            index=np.arange(indices.shape[0]), data=distance_max.T)
+    df_max['trial'] = np.arange(indices.shape[0])
+    df_max['type'] = 'max'
+    df_max['size'] = size_dn.mean()
+    return pd.concat([df_final, df_max]).reset_index(drop=True)
+
+
+def obtain_online_time_vector(file_path: Path) -> float:
+    """ function to obtain time vector when there was a hit """
+
+    bmi_online = sio.loadmat(file_path, simplify_cells=True)
+    time_vector = bmi_online['data']['timeVector']
+    self_hits = bmi_online['data']['selfHits']
+    time_hits = time_vector[self_hits == 1]
+    return time_hits
+
+def obtain_location_direct_neurons(folder_suite2p: Path) -> Tuple[int, int, np.ndarray]:
+    """ function to obtain the location of the direct neurons and distance among them """
+    direct_neurons_aux = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = direct_neurons_aux.take(0)
+    neurons = np.load(Path(folder_suite2p) / "stat.npy", allow_pickle=True)
+    y_E1 = np.asarray([neurons[direct_neurons['E1'][0]]['ypix'].mean(),
+                       neurons[direct_neurons['E1'][1]]['ypix'].mean()])
+    if len(y_E1) != 2:
+        print("Warning: " + folder_suite2p)
+        y_E1 = np.append(np.nan)
+    x_E1 = np.asarray([neurons[direct_neurons['E1'][0]]['xpix'].mean(),
+                       neurons[direct_neurons['E1'][1]]['xpix'].mean()])
+    if len(x_E1) != 2:
+        print("Warning: " + folder_suite2p)
+        x_E1 = np.append(np.nan)
+    y_E2 = np.asarray([neurons[direct_neurons['E2'][0]]['ypix'].mean(),
+                       neurons[direct_neurons['E2'][1]]['ypix'].mean()])
+    if len(y_E2) != 2:
+        print("Warning: " + folder_suite2p)
+        y_E2 = np.append(np.nan)
+    x_E2 = np.asarray([neurons[direct_neurons['E2'][0]]['xpix'].mean(),
+                       neurons[direct_neurons['E2'][1]]['xpix'].mean()])
+    if len(x_E2) != 2:
+        print("Warning: " + folder_suite2p)
+        x_E2 = np.append(np.nan)
+    within_distance = np.asarray([np.sqrt(np.diff(y_E1)**2 + np.diff(x_E1)**2),
+                                  np.sqrt(np.diff(y_E2)**2 + np.diff(x_E2)**2)]).squeeze()
+    across_distance = np.asarray([np.sqrt((y_E1 - y_E2[0])**2 + (x_E1 - x_E2[0])**2),
+                                  np.sqrt((y_E1 - y_E2[1])**2 + (x_E1 - x_E2[1])**2)]).reshape(4)
+    return within_distance[0], within_distance[1], across_distance
 
 def move_file_to_old_folder(folder_name):
     """ moves fneu to fneu_old folder after first pass

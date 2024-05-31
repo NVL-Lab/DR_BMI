@@ -355,10 +355,44 @@ def learning_posthoc(df):
     ut_plots.get_pvalues(a, b, ax3, pos=0.5, height=a[~np.isnan(a)].max())
 
 
+def plot_gain_2022_paper(df: pd.DataFrame):
+    """ function to calculate and plot the gain for the 2022 paper CaBMI """
+    # df = pd.read_csv('C:/Users/Nuria/Documents/Data/ITPT/learning_stats_HPM_bin_1.csv')
+    df_melt = pd.melt(df, id_vars=['animal', 'day', 'session'], var_name='window', value_name='hits')
+    df_melt['window'] = melted_df['window'].str.extract('(\d+)').astype(int)
+    df_melt = df_melt[df_melt.window < 50]
+    df_result = df_melt.groupby(['animal', 'session']).apply(calculate_averages).reset_index()
+    df_result = df_result.dropna()
+    df_result['animal_type'] = result['animal'].apply(lambda x: 'IT' if 'IT' in x else ('PT' if 'PT' in x else 'Unknown'))
+    df_group = df_result.groupby(['animal', 'animal_type']).apply(ut.geometric_mean, 'gain').reset_index()
+    fig1, ax1 = ut_plots.open_plot()
+    sns.boxplot(data=df_group, y='gain', ax=ax1)
+    sns.stripplot(data=df_group, y='gain', ax=ax1, hue='animal_type')
+    ax1.set_ylim([0.15, 3])
 
 
 
 
+def calculate_averages(group):
+    # Filter out rows with NaN hits
+    group_filtered = group.dropna(subset=['hits'])
+
+    # Calculate the sum and count for windows 6 to last non-NaN window
+    df_window_6_plus = group_filtered[group_filtered['window'] >= 6]
+    sum_hits_6_plus = df_window_6_plus['hits'].sum()
+    count_windows_6_plus = df_window_6_plus['window'].nunique()
+
+    # Calculate the sum and count for windows 1 to 5
+    df_window_1_5 = group_filtered[(group_filtered['window'] >= 1) & (group_filtered['window'] <= 5)]
+    sum_hits_1_5 = df_window_1_5['hits'].sum()
+    count_windows_1_5 = 5  # This is always 5 since we're explicitly looking at windows 1 to 5
+
+    # Calculate the averages
+    average_hits_6_plus = sum_hits_6_plus / count_windows_6_plus if count_windows_6_plus != 0 else 0
+    average_hits_1_5 = sum_hits_1_5 / count_windows_1_5
+    if average_hits_1_5 == 0:
+        average_hits_1_5 = np.nan
+    return pd.Series({'gain': average_hits_6_plus/average_hits_1_5 })
 
 
 
