@@ -211,14 +211,11 @@ def plot_snr(df_snr, df_learning):
     fig6, ax6 = ut_plots.open_plot()
     merged_df = df_snr.merge(df_learning, on='session_path', how='inner')
     pearson_corr = merged_df['snr_dn'].corr(merged_df['gain'], method='pearson')
-    sns.scatterplot(data=merged_df, x='snr_dn', y='gain')
+    merged_df['color'] = merged_df['mice_name'].map(color_mapping)
+    for idx, row in merged_df.iterrows():
+        plt.scatter(row['snr_dn'], row['gain'], color=row['color'], edgecolor='w')
+    sns.regplot(data=merged_df, x='snr_dn', y='gain', scatter=False)
     ax6.text(5, 5, 'r2= ' + str(pearson_corr ** 2))
-
-
-def plot_raw_dff_online(folder_suite2p: Path, file_path: Path):
-    """ function to obtain raw dff online and offline """
-    bmi_online = sio.loadmat(str(file_path), simplify_cells=True)
-    dff = np.load(Path(folder_suite2p) / "dff.npy")
 
 
 def plot_online_motion(df: pd.DataFrame):
@@ -248,11 +245,12 @@ def plot_distance_direct_neurons(df: pd.DataFrame):
     df['color'] = df['mice_name'].map(color_mapping)
 
     df['type_code'] = pd.Categorical(df['type']).codes
+    df['distance_pix'] = df['distance'] / 512 * 300
 
     # Manually plot the points with jitter and custom colors
     for idx, row in df.iterrows():
         jittered_x = row['type_code'] + np.random.uniform(-0.2, 0.2)  # Adding jitter
-        plt.scatter(jittered_x, row['distance'], color=row['color'], edgecolor=row['color'])
+        plt.scatter(jittered_x, row['distance_pix'], color=row['color'], edgecolor=row['color'])
 
 
     plt.xlabel('Type')
