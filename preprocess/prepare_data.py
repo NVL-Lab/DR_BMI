@@ -404,6 +404,75 @@ def obtain_motion_per_experiment(folder_suite2p: Path, fc: int = 10) -> pd.DataF
     df_max['size'] = size_dn.mean()
     return pd.concat([df_final, df_max]).reset_index(drop=True)
 
+def obtain_image_corr_per_experiment(folder_suite2p: Path, fc: int = 10) -> pd.DataFrame:
+    """ Function to obtain the correlation to reference during the online experiment based on suite2p measures
+    :param folder_suite2p: folder where the experiment is
+    :param fc: number of frames considered before and after the target acquisition to check motion
+    the BMI averages over 10 frames """
+    ops = np.load(Path(folder_suite2p) / "ops.npy", allow_pickle=True)
+    ops = ops.take(0)
+    index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
+    index_dict = index_aux.take(0)
+    direct_neurons_aux = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = direct_neurons_aux.take(0)
+    neurons = np.load(Path(folder_suite2p) / "stat.npy", allow_pickle=True)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
+    dff = np.load(Path(folder_suite2p) / "dff.npy")
+
+    indices = index_dict['target_index']
+    random_indices = np.sort(np.random.randint(fc + 1,
+                                               AnalysisConstants.calibration_frames - 1, indices.shape[0]))
+
+    corr_tl = create_time_locked_array(ops['corrXY'], indices, (fc, fc))
+    corr_rand_tl = create_time_locked_array(ops['corrXY'], random_indices, (fc, 0))
+    dff_E1_tl = create_time_locked_array(dff[direct_neurons['E1'], :], indices, (fc, fc))
+    dff_E1_rand_tl = create_time_locked_array(dff[direct_neurons['E1'], :], random_indices, (fc, 0))
+    dff_E2_tl = create_time_locked_array(dff[direct_neurons['E2'], :], indices, (fc, fc))
+    dff_E2_rand_tl = create_time_locked_array(dff[direct_neurons['E2'], :], random_indices, (fc, 0))
+    cursor = - np.nanmean(dff[direct_neurons['E1'], :], 0) + np.nanmean(dff[direct_neurons['E2'], :], 0)
+    cursor_tl = create_time_locked_array(cursor, indices, (fc, fc))
+    cursor_rand_tl = create_time_locked_array(cursor, random_indices, (fc, 0))
+    xoff_tl = create_time_locked_array(ops['xoff'], indices, (fc+1, fc))
+    yoff_tl = create_time_locked_array(ops['yoff'], indices, (fc+1, fc))
+    xoff_rand_tl = create_time_locked_array(ops['xoff'], random_indices, (fc+1, 0))
+    yoff_rand_tl = create_time_locked_array(ops['yoff'], random_indices, (fc+1, 0))
+
+    corr_image = np.asarray([np.nanmean(corr_tl[:, :fc],1), np.nanmean(corr_tl[:, fc:],1),
+                             np.nanmean(corr_rand_tl,1)])
+    df_corr_image = pd.DataFrame(columns=['hit', 'reward', 'random'],
+                            index=np.arange(indices.shape[0]), data=corr_image.T)
+    df_corr_image['trial'] = np.arange(indices.shape[0])
+    df_corr_image['type'] = 'image'
+
+    corr_cursor = np.full([indices.shape[0], 3], np.nan)
+    corr_E1 = np.full([indices.shape[0], 3], np.nan)
+    corr_E2 = np.full([indices.shape[0], 3], np.nan)
+    for tt, trial in enumerate(indices):
+        motion = np.sqrt(np.diff(xoff_tl[tt, :])**2 + np.diff(yoff_tl[tt, :])**2)
+        motion_rand = np.sqrt(np.diff(xoff_rand_tl[tt, :])**2 + np.diff(yoff_rand_tl[tt, :])**2)
+        corr_cursor[tt, 0] = np.corrcoef(cursor_tl[tt, :fc], motion[:fc])[0,1] ** 2
+        corr_cursor[tt, 1] = np.corrcoef(cursor_tl[tt, fc:], motion[fc:])[0, 1] ** 2
+        corr_cursor[tt, 2] = np.corrcoef(cursor_rand_tl[tt, :], motion_rand)[0, 1] ** 2
+        corr_E1[tt, 0] = np.corrcoef(np.nanmean(dff_E1_tl[:, tt, :fc],0), motion[:fc])[0,1] ** 2
+        corr_E1[tt, 1] = np.corrcoef(np.nanmean(dff_E1_tl[:, tt, fc:],0), motion[fc:])[0,1] ** 2
+        corr_E1[tt, 2] = np.corrcoef(np.nanmean(dff_E1_rand_tl[:, tt, :],0), motion_rand)[0, 1] ** 2
+        corr_E2[tt, 0] = np.corrcoef(np.nanmean(dff_E2_tl[:, tt, :fc], 0), motion[:fc])[0, 1] ** 2
+        corr_E2[tt, 1] = np.corrcoef(np.nanmean(dff_E2_tl[:, tt, fc:], 0), motion[fc:])[0, 1] ** 2
+        corr_E2[tt, 2] = np.corrcoef(np.nanmean(dff_E2_rand_tl[:, tt, :], 0), motion_rand)[0, 1] ** 2
+    df_corr_cursor = pd.DataFrame(columns=['hit', 'reward', 'random'],
+                                 index=np.arange(indices.shape[0]), data=corr_cursor)
+    df_corr_cursor['type'] = 'cursor'
+    df_corr_cursor['trial'] = np.arange(indices.shape[0])
+    df_corr_E1= pd.DataFrame(columns=['hit', 'reward', 'random'],
+                                  index=np.arange(indices.shape[0]), data=corr_E1)
+    df_corr_E1['type'] = 'E1'
+    df_corr_E1['trial'] = np.arange(indices.shape[0])
+    df_corr_E2 = pd.DataFrame(columns=['hit', 'reward', 'random'],
+                                  index=np.arange(indices.shape[0]), data=corr_E2)
+    df_corr_E2['type'] = 'E2'
+    df_corr_E2['trial'] = np.arange(indices.shape[0])
+    return pd.concat([df_corr_image, df_corr_cursor, df_corr_E1, df_corr_E2]).reset_index(drop=True)
+
 
 def obtain_online_time_vector(file_path: Path) -> float:
     """ function to obtain time vector when there was a hit """

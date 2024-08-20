@@ -270,6 +270,22 @@ def obtain_motion(folder_list: list) -> pd.DataFrame:
         list_df.append(df_motion)
     return pd.concat(list_df)
 
+def obtain_corr(folder_list: list, fc: int = 30) -> pd.DataFrame:
+    """ Function to obtain the correlation to reference image during the online experiment for all experiments """
+    list_df = []
+    df = ss.get_sessions_df(folder_list, 'D1act')
+    for index, row in df.iterrows():
+        print('obtaining corr for ' + row['session_path'])
+        folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+        folder_processed_experiment = Path(folder_process) / row['session_path']
+        folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+        df_corr = pp.obtain_image_corr_per_experiment(folder_suite2p, fc)
+        df_corr['mice'] = row['mice_name']
+        df_corr['session_path'] = row['session_path']
+        df_corr['day_index'] = row['day_index']
+        list_df.append(df_corr)
+    return pd.concat(list_df)
+
 def obtain_dist_neurons(folder_list: list) -> pd.DataFrame:
     """ function to obtain the distance among direct neurons of all the experiments """
     ret = collections.defaultdict(list)

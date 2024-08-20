@@ -34,7 +34,7 @@ from analysis import dynamics_population as dp
 
 interactive(True)
 
-folder_list = {'FA': 'D:/data', 'FB': 'E:/data', 'FC': 'F:/data'}
+folder_list = {'FB': 'D:/data', 'FA': 'F:/data', 'FC': 'E:/data'}
 folder_data = Path("C:/Users/Nuria/Documents/DATA/D1RBMI/D1exp/df_data")
 folder_plots = Path("C:/Users/Nuria/Documents/DATA/D1RBMI/D1exp/plots")
 default_path = Path("C:/Users/Nuria/Documents/DATA/D1RBMI/D1exp/default_var")
