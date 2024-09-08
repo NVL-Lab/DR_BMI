@@ -1,5 +1,5 @@
 # DR_BMI Project
-
+<a href="https://zenodo.org/doi/10.5281/zenodo.11430076"><img src="https://zenodo.org/badge/568540530.svg" alt="DOI"></a>
 ## Overview
 
 This repository contains the code used for the paper "Dopamine D1 receptor activation in the striatum is sufficient to drive reinforcement of anteceding cortical patterns". The project is organized into several folders, each serving a specific purpose in the workflow. Below is an explanation of each folder and the files within them.
