@@ -121,6 +121,7 @@ def obtain_r2_motion_cursor(folder_list: list, seconds:int = 5) -> pd.DataFrame:
         if XY_BMI is not None:
             ret['mice'].append(row['mice_name'])
             ret['session_path'].append(row['session_path'])
-            r2 = ma.obtain_motion_cursor(XY_BMI, folder_raw / row['session_path'] / row['BMI_online'])
+            XY_derivatives = ma.obtain_motion_cursor(XY_BMI, folder_raw / row['session_path'] / row['BMI_online'])
+            r2 = np.corrcoef(XY_derivatives.cursor, XY_derivatives.displacement)[0, 1] ** 2
             ret['r2'].append(r2)
     return pd.DataFrame(ret)

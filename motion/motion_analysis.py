@@ -111,10 +111,13 @@ def obtain_motion_cursor(XY_BMI, file_path: Path):
     """ Function to obtain the motion before hits vs after hits vs spontaneous """
     bmi_online = sio.loadmat(file_path, simplify_cells=True)
     cursor = bmi_online['data']['cursor']
+    bmiAct = bmi_online['data']['bmiAct']
     XY_derivatives = traja.trajectory.get_derivatives(XY_BMI)
     XY_derivatives['displacement_time'] = (XY_derivatives.displacement_time * AnalysisConstants.framerate).astype(int)
     XY_derivatives = XY_derivatives[XY_derivatives['displacement_time'] < len(cursor)]
     XY_derivatives['cursor'] = XY_derivatives['displacement_time'].apply(lambda x: cursor[x])
+    XY_derivatives['E1'] = XY_derivatives['displacement_time'].apply(lambda x: np.nanmean(bmiAct[:2, x],0))
+    XY_derivatives['E2'] = XY_derivatives['displacement_time'].apply(lambda x: np.nanmean(bmiAct[2:, x],0))
     XY_derivatives.replace([np.inf, -np.inf], np.nan, inplace=True)
     XY_derivatives = XY_derivatives.dropna()
-    return np.corrcoef(XY_derivatives.cursor, XY_derivatives.displacement)[0, 1] ** 2
+    return XY_derivatives

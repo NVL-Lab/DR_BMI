@@ -421,3 +421,72 @@ def convert_bmi_files_for_upload(folder_list: list, folder_dst: Path):
             # Move the zip file to the destination folder
             print('moving the zif_file')
             shutil.move(zip_file_path, folder_dst / zip_file_name)
+
+def obtain_corr_traces(folder_list: list, fc: int = 30) -> pd.DataFrame:
+    """ Function to obtain the correlation to traces of the online experiment for all experiments """
+    ret = collections.defaultdict(list)
+    df = ss.get_sessions_df(folder_list, 'D1act')
+    for index, row in df.iterrows():
+        print('obtaining corr for ' + row['session_path'])
+        folder_process = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'process'
+        folder_processed_experiment = Path(folder_process) / row['session_path']
+        folder_suite2p = folder_processed_experiment / 'suite2p' / 'plane0'
+        folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+        file_path = folder_raw / row['session_path'] / row['BMI_online']
+        r2_E1, r2_E2 = pp.obtain_correlation_traces(folder_suite2p, file_path, fc)
+        ret['mice'].append(row['mice_name'])
+        ret['session_path'].append(row['session_path'])
+        ret['r2_E1'].append(r2_E1[0])
+        ret['r2_E2'].append(r2_E2[0])
+        ret['time'].append('before')
+        ret['mice'].append(row['mice_name'])
+        ret['session_path'].append(row['session_path'])
+        ret['r2_E1'].append(r2_E1[1])
+        ret['r2_E2'].append(r2_E2[1])
+        ret['time'].append('hit')
+        ret['mice'].append(row['mice_name'])
+        ret['session_path'].append(row['session_path'])
+        ret['r2_E1'].append(r2_E1[2])
+        ret['r2_E2'].append(r2_E2[2])
+        ret['time'].append('reward')
+    return pd.DataFrame(ret)
+
+def obtain_online_comparison_calibration(folder_list: list, fc: int = 30) -> pd.DataFrame:
+    """ Function to obtain the correlation to reference image during the online experiment for all experiments """
+    list_df_calib = []
+    list_df = []
+    df = ss.get_sessions_df(folder_list, 'D1act')
+    for index, row in df.iterrows():
+        print('obtaining comparison for ' + row['session_path'])
+        folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+        file_path = folder_raw / row['session_path'] / row['BMI_online']
+        file_base_path = folder_raw / row['session_path'] / row['Baseline_online']
+        bmi_online = sio.loadmat(file_path, simplify_cells=True)
+        base_online = sio.loadmat(file_base_path, simplify_cells=True)
+        f_online = base_online['baseActivity']
+        f_E1_calib = f_online[bmi_online['bData']['E1_base'] - 1, :]
+        f_E2_calib = f_online[bmi_online['bData']['E2_base'] - 1, :]
+        df_calib = pp.online_comparison(f_E1_calib, f_E2_calib)
+        df_calib['mice'] = row['mice_name']
+        df_calib['session_path'] = row['session_path']
+        list_df_calib.append(df_calib)
+        df_bmi = pp.online_comparison(bmi_online['data']['bmiAct'][:2,:], bmi_online['data']['bmiAct'][2:,:])
+        df_bmi['mice'] = row['mice_name']
+        df_bmi['session_path'] = row['session_path']
+        list_df.append(df_bmi)
+    return pd.concat(list_df_calib), pd.concat(list_df)
+
+
+def obtain_comparison_trial(folder_list: list, fc: int = 150) -> pd.DataFrame:
+    """ Function to obtain the correlation to reference image during the online experiment for all experiments """
+    list_df = []
+    df = ss.get_sessions_df(folder_list, 'D1act')
+    for index, row in df.iterrows():
+        print('obtaining comparison for ' + row['session_path'])
+        folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+        file_path = folder_raw / row['session_path'] / row['BMI_online']
+        df_cnt = pp.comparison_neurons_trials(folder_suite2p, fc)
+        df_cnt['mice'] = row['mice_name']
+        df_cnt['session_path'] = row['session_path']
+        list_df.append(df_cnt)
+    return pd.concat(list_df)

@@ -542,7 +542,122 @@ def move_file_to_old_folder(folder_name):
     print("File search and move completed.")
 
 
+def obtain_correlation_traces(folder_suite2p: Path, file_path:Path, fc:int = 30):
+    """ function to obtain correlation online/offline """
 
+    f = np.load(Path(folder_suite2p) / "f.npy")
+    index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
+    index_dict = index_aux.take(0)
+    indices = index_dict['target_index']
+    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = aux_dn.take(0)
+    ensemble = direct_neurons['E1'] + direct_neurons['E2']
+    pre_f_dn = f[ensemble, :]
+    bmi_online = sio.loadmat(file_path, simplify_cells=True)
+    pre_f_online = bmi_online['data']['bmiAct']
+    f_dn = np.full(pre_f_dn.shape, np.nan)
+    f_dn_online = np.full(pre_f_online.shape, np.nan)
+    for neuron in np.arange(f_dn.shape[0]):
+        smooth_filt = np.ones(AnalysisConstants.dff_win) / AnalysisConstants.dff_win
+        f_dn[neuron, AnalysisConstants.dff_win - 1:] = np.convolve(pre_f_dn[neuron,:], smooth_filt, 'valid')
+        f_dn_online[neuron, AnalysisConstants.dff_win - 1:] = np.convolve(pre_f_online[neuron, :], smooth_filt, 'valid')
+    f_tl = pp.create_time_locked_array(f_dn, indices, (2*fc, fc))
+    f_tl_online = pp.create_time_locked_array(f_dn_online, np.where(bmi_online['data']['selfHits'])[0], (2*fc, fc))
+
+    r2_E1 = np.full([len(indices), 3], np.nan)
+    r2_E2 = np.full([len(indices), 3], np.nan)
+    for ii, index in enumerate(indices):
+        r2_E1[ii, 0] = np.corrcoef(np.nansum(f_tl[:2, ii, :fc],0), np.nansum(f_tl_online[:2, ii, :fc],0))[0, 1] ** 2
+        r2_E2[ii, 0] = np.corrcoef(np.nansum(f_tl[2:, ii, :fc], 0), np.nansum(f_tl_online[2:, ii, :fc], 0))[0, 1] ** 2
+        r2_E1[ii, 1] = np.corrcoef(np.nansum(f_tl[:2, ii, fc:2*fc],0), np.nansum(f_tl_online[:2, ii, fc:2*fc],0))[0, 1] ** 2
+        r2_E2[ii, 1] = np.corrcoef(np.nansum(f_tl[2:, ii, fc:2*fc], 0), np.nansum(f_tl_online[2:, ii, fc:2*fc], 0))[0, 1] ** 2
+        r2_E1[ii, 2] = np.corrcoef(np.nansum(f_tl[:2, ii, 2*fc:],0), np.nansum(f_tl_online[:2, ii, 2*fc:],0))[0, 1] ** 2
+        r2_E2[ii, 2] = np.corrcoef(np.nansum(f_tl[2:, ii, 2*fc:], 0), np.nansum(f_tl_online[2:, ii, 2*fc:], 0))[0, 1] ** 2
+
+    return np.nanmean(r2_E1, 0), np.nanmean(r2_E2, 0)
+
+
+def online_comparison(f_E1: np.array, f_E2: np.array) -> pd.DataFrame:
+    """ Function to study differences of E1 and E2 """
+
+    # Initialize an empty DataFrame with the appropriate columns
+    df_results = pd.DataFrame(columns=['std', 'pks', 'ampl', 'type'])
+
+    # Combined loop for both E1 and E2
+    for nn in range(f_E1.shape[0]):
+        # Process E1
+        aux_E1 = signal.savgol_filter(f_E1[nn, ~np.isnan(f_E1[nn, :])], window_length=101, polyorder=2)
+        peaks_E1, _ = signal.find_peaks(aux_E1, height=None, distance=100, prominence=50)
+
+        std_E1 = np.nanstd(f_E1[nn, :])
+        E1_pks = peaks_E1.shape[0]
+        f_E1_ampl = aux_E1[peaks_E1].mean() / aux_E1.mean() if peaks_E1.size > 0 else np.nan
+
+        # Append the result to the DataFrame
+        df_results.loc[nn] = [std_E1, E1_pks, f_E1_ampl, 'E1']
+
+    for nn in range(f_E2.shape[0]):
+        # Process E2
+        aux_E2 = signal.savgol_filter(f_E2[nn, ~np.isnan(f_E2[nn, :])], window_length=101, polyorder=2)
+        peaks_E2, _ = signal.find_peaks(aux_E2, height=None, distance=100, prominence=50)
+
+        std_E2 = np.nanstd(f_E2[nn, :])
+        E2_pks = peaks_E2.shape[0]
+        f_E2_ampl = aux_E2[peaks_E2].mean() / aux_E2.mean() if peaks_E2.size > 0 else np.nan
+
+        # Append the result to the DataFrame
+        df_results.loc[nn + f_E1.shape[0]] = [std_E2, E2_pks, f_E2_ampl, 'E2']
+
+    return df_results
+
+
+def comparison_neurons_trials(folder_suite2p: Path, fc:int = 150) -> pd.DataFrame:
+    """ Function to study differences of E1 and E2 """
+    dff = np.load(Path(folder_suite2p) / "dff.npy")
+    index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
+    index_dict = index_aux.take(0)
+    indices = index_dict['target_index']
+    aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
+    direct_neurons = aux_dn.take(0)
+    dff_E1 = dff[direct_neurons['E1'], :]
+    dff_E2 = dff[direct_neurons['E2'], :]
+    dff_E1_tl = pp.create_time_locked_array(dff_E1, indices, (fc, 0))
+    dff_E2_tl = pp.create_time_locked_array(dff_E2, indices, (fc, 0))
+
+
+    # Initialize an empty DataFrame with the appropriate columns
+    df_results = pd.DataFrame(columns=['std', 'pks', 'ampl', 'type', 'trial'])
+
+    # Combined loop for both E1 and E2
+    ii=0
+    for tt, index in enumerate(indices):
+        for nn in range(dff_E1.shape[0]):
+            # Process E1
+            aux_E1 = signal.savgol_filter(dff_E1_tl[nn, tt, ~np.isnan(dff_E1_tl[nn, tt, :])], window_length=11, polyorder=2)
+            peaks_E1, _ = signal.find_peaks(aux_E1, height=None, distance=10, prominence=0.1)
+
+            std_E1 = np.nanstd(dff_E1_tl[nn, tt, :])
+            E1_pks = peaks_E1.shape[0]
+            E1_amp = aux_E1[peaks_E1].mean() / np.abs(aux_E1.mean()) if peaks_E1.size > 0 else np.nan
+
+            # Append the result to the DataFrame
+            df_results.loc[ii] = [std_E1, E1_pks, E1_amp, 'E1', tt]
+            ii += 1
+
+        for nn in range(dff_E2.shape[0]):
+            # Process E2
+            aux_E2 = signal.savgol_filter(dff_E2_tl[nn, tt, ~np.isnan(dff_E2_tl[nn, tt, :])], window_length=11, polyorder=2)
+            peaks_E2, _ = signal.find_peaks(aux_E2, height=None, distance=10, prominence=0.1)
+
+            std_E2 = np.nanstd(dff_E2_tl[nn, tt, :])
+            E2_pks = peaks_E2.shape[0]
+            E2_amp = aux_E2[peaks_E2].mean() / np.abs(aux_E2.mean()) if peaks_E2.size > 0 else np.nan
+
+            # Append the result to the DataFrame
+            df_results.loc[ii] = [std_E2, E2_pks, E2_amp, 'E2', tt]
+            ii += 1
+
+    return df_results
 
 
 

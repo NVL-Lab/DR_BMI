@@ -102,3 +102,36 @@ def plot_motion_trial(df:pd.DataFrame):
         fig2, ax2 = ut_plots.open_plot()
         sns.regplot(data=df_trial, x='trial', y=column, ax=ax2)
         ut_plots.save_plot(fig2, ax2, folder_plots, 'motion_trial_time', column, False)
+
+
+def all_regression():
+    """ Function to plot regression of cursor vs displacement """
+    # Create two figures, each with 20 subplots (4x5 layout)
+    fig1, axes1 = plt.subplots(4, 5, figsize=(20, 15))
+    fig2, axes2 = plt.subplots(4, 5, figsize=(20, 15))
+
+    # Flatten the axes for easier indexing
+    axes1 = axes1.flatten()
+    axes2 = axes2.flatten()
+
+    x_bins = np.linspace(-1,1,30)
+    df_sessions = ss.get_sessions_df(folder_list, 'D1act')
+    for index, row in df_sessions.iterrows():
+        folder_raw = Path(folder_list[ss.find_folder_path(row['mice_name'])]) / 'raw'
+        file_path = Path(folder_raw) / row['session_path'] / 'motor'
+        XY_BMI = ma.extract_XY_data(file_path / row['trigger_BMI'], file_path / row['XY_BMI'])
+        if XY_BMI is not None:
+            XY_derivatives = ma.obtain_motion_cursor(XY_BMI, folder_raw / row['session_path'] / row['BMI_online'])
+            if index < 20:
+                ax = axes1[index]
+            else:
+                ax = axes2[index - 20]
+            # Plot the linear regression for cursor
+            sns.regplot(x=XY_derivatives.E1, y=XY_derivatives.displacement, ax=ax)
+            ax.set_title(f"{row['mice_name']}: {row['session_path']}")
+            ax.set_xlabel('E1')
+            ax.set_ylabel('Displacement')
+
+        # Adjust layout for better spacing
+        fig1.tight_layout()
+        fig2.tight_layout()
