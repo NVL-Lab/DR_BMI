@@ -62,7 +62,7 @@ def plot_FA_spontaneous_activity(df: pd.DataFrame, folder_plots: Path):
 def plot_SOT(df: pd.DataFrame, df_learning: pd.DataFrame, folder_plots: Path):
     color_mapping = ut_plots.generate_palette_all_figures()
     # plot all over times
-    for cc in df.columns[3:]:
+    for cc in df.columns[4:]:
         fig1, ax1 = ut_plots.open_plot()
         for experiment_type in df.experiment.unique():
             # ax1.plot(np.vstack(df[df.experiment == experiment_type][cc].values).T, 'gray')
@@ -702,6 +702,67 @@ def plot_events(df: pd.DataFrame):
                                      h.ax, 5, np.nanmean(data_to_plot[column]))
             h.ax.set_title(neuron_type + '_' + column)
             ut_plots.save_plot(h.fig, h.ax, folder_plots, 'event_counts' + neuron_type, column, False)
+
+
+def plot_dim_sot_window(df):
+    """ to plot dim and sot in window times """
+    color_mapping = ut_plots.generate_palette_all_figures()
+    df_group = df.drop(['session_path', 'win_type'], axis=1).groupby(['mice', 'window']).mean().reset_index()
+
+    fig1, ax1 = ut_plots.open_plot()
+    sns.stripplot(data=df_group, x='window', y='SOT_dn', hue='mice', palette=color_mapping, ax=ax1)
+    sns.regplot(data=df_group, x='window', y='SOT_dn', scatter=False, ax=ax1)
+    ax1.set_xticklabels(np.sort(df_group.window.unique())*AnalysisConfiguration.FA_time_win)
+
+    fig2, ax2 = ut_plots.open_plot()
+    sns.stripplot(data=df_group, x='window', y='SOT_in', hue='mice', palette=color_mapping, ax=ax2)
+    sns.regplot(data=df_group, x='window', y='SOT_in', scatter=False, ax=ax2)
+    ax2.set_xticklabels(np.sort(df_group.window.unique()) * AnalysisConfiguration.FA_time_win)
+
+    fig3, ax3 = ut_plots.open_plot()
+    sns.stripplot(data=df_group, x='window', y='DIM_dn', hue='mice', palette=color_mapping, ax=ax3, jitter=False)
+    sns.regplot(data=df_group, x='window', y='DIM_dn', scatter=False, ax=ax3)
+    ax1.set_xticklabels(np.sort(df_group.window.unique())*AnalysisConfiguration.FA_time_win)
+
+    fig4, ax4 = ut_plots.open_plot()
+    sns.stripplot(data=df_group, x='window', y='DIM_in', hue='mice', palette=color_mapping, ax=ax4, jitter=False)
+    sns.regplot(data=df_group, x='window', y='DIM_in', scatter=False, ax=ax4)
+    ax1.set_xticklabels(np.sort(df_group.window.unique())*AnalysisConfiguration.FA_time_win)
+
+
+def plot_engagement(df):
+    """ plot engagement of all"""
+    color_mapping = ut_plots.generate_palette_all_figures()
+    len_array = 20
+    df_d1act = df[df.experiment == 'D1act']
+    col_aux = [col for col in df_d1act.columns[3:] if 'calib' not in col]
+    for cc in col_aux:
+        df_d1act = ut.replace_cc_val_with_nan(df_d1act, cc, len_array)
+        fig1, ax1 = ut_plots.open_plot()
+        fig2, ax2 = ut_plots.open_plot()
+        ax1.set_xlabel(cc)
+        ax2.set_xlabel(cc)
+        sot_array = np.full((len(df_d1act.mice.unique()), len_array), np.nan)
+        sot_calib = np.full((len(df_d1act.mice.unique()), len_array), np.nan)
+        for mm, mouse in enumerate(df_d1act.mice.unique()):
+            day_values = np.vstack(df_d1act[df_d1act.mice == mouse][cc].values)
+            if 'stim' in cc:
+                cc_calib = cc.replace("stim", "calib")
+            elif 'target' in cc:
+                cc_calib = cc.replace("target", "calib")
+            day_calib = np.vstack(df_d1act[df_d1act.mice == mouse][cc_calib].values)
+            min_x = np.min([len_array, day_values.shape[1]])
+            sot_array[mm, :min_x] = np.nanmean(day_values, 0)[:min_x]
+            sot_calib[mm, :min_x] = np.nanmean(day_calib, 0)[:min_x]
+            sns.stripplot(x=np.arange(len_array), y=sot_array[mm, :], color= color_mapping[mouse], ax=ax2)
+
+        sns.regplot(x=np.arange(len_array), y=np.nanmean(sot_array, 0), ax=ax2, scatter=False)
+        sns.regplot(x=np.arange(len_array), y=np.nanmean(sot_array, 0), ax=ax1)
+        sns.regplot(x=np.arange(len_array), y=np.nanmean(sot_calib, 0), ax=ax1, color='lightgray')
+        ut_plots.get_reg_pvalues(np.arange(len_array), np.nanmean(sot_array, 0), ax1, 1, height=np.nanmean(sot_array))
+
+
+
 
 
 

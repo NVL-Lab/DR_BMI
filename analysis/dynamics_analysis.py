@@ -153,8 +153,12 @@ def obtain_SOT_windows(folder_suite2p: Path, win: Tuple, remove_target: bool = T
     :return:
     """
 
-    spks_dff = np.load(Path(folder_suite2p) / "spks_dff.npy")
+    spks = np.load(Path(folder_suite2p) / "spks.npy")
     is_cell = np.load(Path(folder_suite2p) / "iscell.npy")
+    spks_av = ut.sum_array_samples(spks, 1, AnalysisConfiguration.FA_spks_av_win)
+    win_av = (np.round(win[0]/AnalysisConfiguration.FA_spks_av_win).astype(int),
+              np.round(win[1]/AnalysisConfiguration.FA_spks_av_win).astype(int))
+
     aux_dn = np.load(Path(folder_suite2p) / "direct_neurons.npy", allow_pickle=True)
     direct_neurons = aux_dn.take(0)
     ensemble = direct_neurons['E1'] + direct_neurons['E2']
@@ -162,7 +166,7 @@ def obtain_SOT_windows(folder_suite2p: Path, win: Tuple, remove_target: bool = T
     indirect_neurons[ensemble, :] = [0, 0]
     indirect_neurons[direct_neurons['exclude'], :] = [0, 0]
 
-    frames = np.arange(np.max([win[0], 0]), np.min([win[1], spks_dff.shape[1]]), dtype=int)
+    frames = np.arange(np.max([win_av[0], 0]), np.min([win_av[1], spks_av.shape[1]]), dtype=int)
 
     if remove_target:
         index_aux = np.load(Path(folder_suite2p) / "target_time_dict.npy", allow_pickle=True)
@@ -170,7 +174,7 @@ def obtain_SOT_windows(folder_suite2p: Path, win: Tuple, remove_target: bool = T
         indices = index_dict['target_index']
         frames = ut.remove_matching_index(frames, indices, AnalysisConfiguration.FA_event_frames)
 
-    SOT_dn, SOT_in, DIM_dn, DIM_in = obtain_SOT_all(ensemble, indirect_neurons, spks_dff[:, frames])
+    SOT_dn, SOT_in, DIM_dn, DIM_in = obtain_SOT_all(ensemble, indirect_neurons, spks_av[:, frames])
     return SOT_dn, SOT_in, DIM_dn, DIM_in
 
 

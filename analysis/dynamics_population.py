@@ -130,7 +130,7 @@ def obtain_population_SOT_windows(folder_list: list, remove_target: bool = True)
 
     windows = []
 
-    aux_w = np.arange(AnalysisConstants.calibration_frames, 0,
+    aux_w = np.arange(AnalysisConstants.calibration_frames, 2000,
                                        - int(AnalysisConfiguration.FA_time_win * AnalysisConstants.framerate * 60))[::-1]
     for ww, win in enumerate(aux_w[1:]):
         windows.append((aux_w[ww], win))
@@ -214,7 +214,7 @@ def obtain_population_engagement(folder_list: list, line_flag: bool = False) -> 
     """ function to obtain engagement of indirect neurons for all experiments with neurons x time """
     ret = collections.defaultdict(list)
     for experiment_type in AnalysisConstants.experiment_types:
-        if experiment_type not in ['CONTROL', 'CONTROL_AGO']:
+        if experiment_type == 'D1act' : #not in ['CONTROL', 'CONTROL_AGO']:
             df_sessions = ss.get_sessions_df(folder_list, experiment_type)
             mice = df_sessions.mice_name.unique()
             for aa, mouse in enumerate(mice):
